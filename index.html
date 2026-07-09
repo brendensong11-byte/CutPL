@@ -24,7 +24,7 @@
                 <p id="empty_msg" class="text-sm text-gray-400 text-center py-12">저장된 품목이 없습니다.<br>우측에서 계산 후 저장해 주세요.</p>
             </div>
 
-            <!-- 🏢 왼쪽 맨 아래: 현장 전체 최종 합계 (금액 삭제) -->
+            <!-- 🏢 현장 전체 최종 합계 -->
             <div class="mt-4 pt-4 border-t border-gray-200 bg-slate-900 text-white p-4 rounded-xl space-y-1 shadow-inner">
                 <span class="text-xs font-bold text-amber-400 uppercase tracking-wider block">🏢 현장 총 합계 (누적)</span>
                 <div class="grid grid-cols-2 gap-y-1 text-sm text-gray-200 pt-1">
@@ -39,7 +39,7 @@
             
             <div class="border-b border-gray-100 pb-3 text-center">
                 <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">
-                    도면 계산기<span class="text-blue-600 font-normal text-base"> (✨SketchCut 연동 에디션)</span>
+                    도면 계산기<span class="text-blue-600 font-normal text-base"> (✨간편 입력 에디션)</span>
                 </h1>
             </div>
 
@@ -58,7 +58,7 @@
                 </div>
             </div>
 
-            <!-- 🎚️ 무늬 맞춤 로스율 조절 슬라이더 (SketchCut 기준 적용) -->
+            <!-- 🎚️ 무늬 맞춤 로스율 조절 슬라이더 -->
             <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-2">
                 <div class="flex justify-between items-center text-xs">
                     <span class="font-bold text-amber-900">✂️ SketchCut 기준 무늬 방향 및 로스율 조정</span>
@@ -80,10 +80,10 @@
                 <span class="text-base font-black text-blue-700"><span id="total_slabs">0</span> 장</span>
             </div>
 
-            <!-- 재단 치수 -->
+            <!-- 재단 치수 (입력 편의 개선) -->
             <div>
-                <label class="block text-sm font-bold text-gray-700 mb-1">재단 치수 입력 (mm 단위)</label>
-                <textarea id="input_cut" class="w-full p-3 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50" rows="3" placeholder="예: 2450*860" oninput="calculateAll()"></textarea>
+                <label class="block text-sm font-bold text-gray-700 mb-1">재단 치수 입력 (가로 세로)</label>
+                <textarea id="input_cut" class="w-full p-3 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50" rows="4" placeholder="편하게 입력하세요!&#10;예1) 2450 560 (띄어쓰기)&#10;예2) 2450,560 (쉼표)&#10;예3) 1600/750 (슬래시)" oninput="calculateAll()"></textarea>
                 <div class="text-xs text-right text-gray-500 mt-1">현재 품목 재단 총 길이: <span id="res_cut" class="font-bold text-blue-600">0</span> m</div>
             </div>
 
@@ -94,9 +94,9 @@
                     
                     <div class="flex gap-1">
                         <select id="select_process_type" class="p-1 text-xs bg-white border border-gray-300 rounded focus:outline-none">
-                            <option value="gosra">고스라 🔺 (mm단위 치수)</option>
-                            <option value="back">배면연마 //// (mm단위 치수)</option>
-                            <option value="jolly">뒷도매(졸리) 〇〇 (mm단위 치수)</option>
+                            <option value="gosra">고스라 🔺 (치수 입력)</option>
+                            <option value="back">배면연마 //// (치수 입력)</option>
+                            <option value="jolly">뒷도매(졸리) 〇〇 (치수 입력)</option>
                             <option value="basin">세면대타공 (개수)</option>
                             <option value="sink">싱크타공 (개수)</option>
                             <option value="water">수전타공 (개수)</option>
@@ -138,6 +138,7 @@
             ttanaegi: { name: '따내기', type: 'number', placeholder: '0', unit: '개' }
         };
 
+        // 가공 입력 분석용 (숫자들만 싹 더해주는 기능)
         function parseAndSumToMeters(text) {
             if (!text) return 0;
             const numbers = text.match(/\d+/g);
@@ -146,14 +147,20 @@
             return (sumMm / 1000).toFixed(2);
         }
 
+        // 쉼표, 슬래시, 공백, 별표 등 다양한 구분자를 완벽히 분리해내는 핵심 엔진
         function calculateCuttingAreaAndLength(text) {
             let totalAreaM2 = 0;
             let totalLengthM = 0;
             if (!text) return { area: 0, length: 0 };
 
-            const lines = text.split(/[\n,;+]+/);
+            // 줄바꿈이나 세미콜론 등으로 먼저 행을 나눔
+            const lines = text.split(/[\n;]+/);
+            
             lines.forEach(line => {
+                if(!line.trim()) return;
+                // 한 줄 안에서 숫자만 순서대로 추출 (공백, 쉼표, 별표, 슬래시 다 통과됨)
                 const parts = line.match(/\d+/g);
+                
                 if (parts && parts.length >= 2) {
                     const w = parseInt(parts[0]);
                     const h = parseInt(parts[1]);
@@ -345,7 +352,7 @@
         function resetCurrentForm() {
             document.getElementById('item_name').value = '';
             document.getElementById('input_cut').value = '';
-            document.getElementById('input_loss_rate').value = 70; // 기본 효율 복원
+            document.getElementById('input_loss_rate').value = 70;
             activeFields = {};
             renderFields();
             calculateAll();
