@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> - 도면 통합 계산기</title>
+    <title>CutPL - 세라믹 도면 통합 계산기</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
 <body class="bg-slate-100 text-gray-800 min-h-screen py-8 px-4 flex justify-center items-start">
@@ -11,15 +11,22 @@
     <!-- 큰 틀 구성 -->
     <div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- 📋 [왼쪽] 현장 누적 기록장 (금액 완전 삭제) -->
+        <!-- 📋 [왼쪽] 현장 누적 기록장 -->
         <div class="lg:col-span-5 bg-white p-5 rounded-2xl shadow-xl border border-gray-200/60 flex flex-col h-full min-h-[600px]">
-            <div class="border-b pb-3 mb-4">
-                <h2 class="text-lg font-bold text-slate-900 flex items-center gap-1">
-                    📋 현장 누적 기록장 <span class="text-xs font-normal text-gray-400">(여러 자재 합산)</span>
-                </h2>
-                <p class="text-[11px] text-gray-400 mt-0.5">우측에서 입력 후 '품목 저장하기'를 누르면 여기에 쌓입니다.</p>
+            <div class="border-b pb-3 mb-4 flex justify-between items-center">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-900 flex items-center gap-1">
+                        📋 현장 누적 기록장 <span class="text-xs font-normal text-gray-400">(여러 자재 합산)</span>
+                    </h2>
+                    <p class="text-[11px] text-gray-400 mt-0.5">우측에서 입력 후 '품목 저장하기'를 누르면 여기에 쌓입니다.</p>
+                </div>
+                <!-- 🧹 전체 내역 초기화 버튼 추가 -->
+                <button onclick="clearAllRecords()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs px-2.5 py-1.5 rounded-lg font-bold transition-all border border-red-200">
+                    🧹 전체 초기화
+                </button>
             </div>
 
+            <!-- 누적 아이템 리스트 영역 -->
             <div id="saved_list" class="space-y-3 flex-1 overflow-y-auto max-h-[550px] pr-1">
                 <p id="empty_msg" class="text-sm text-gray-400 text-center py-12">저장된 품목이 없습니다.<br>우측에서 계산 후 저장해 주세요.</p>
             </div>
@@ -36,14 +43,13 @@
 
         <!-- ✍️ [오른쪽] 세라믹 계산 및 입력창 -->
         <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-xl border border-gray-100 space-y-5">
-            
             <div class="border-b border-gray-100 pb-3 text-center">
                 <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">
                     도면 계산기<span class="text-blue-600 font-normal text-base"> (✨무늬맞춤 간편 에디션)</span>
                 </h1>
             </div>
 
-            <!-- 자재 정보 -->
+            <!-- 자재 정보 (단가/금액 관련 요소 완전 삭제) -->
             <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/60">
                 <div>
                     <label class="block text-xs font-bold text-gray-600 mb-1">두께 및 자재명 (구분용)</label>
@@ -92,7 +98,6 @@
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-4">
                 <div class="flex justify-between items-center border-b pb-2 border-slate-200">
                     <span class="text-xs font-bold text-slate-700 tracking-wider flex items-center gap-1">🛠️ 가공 및 타공 선택 입력</span>
-                    
                     <div class="flex gap-1">
                         <select id="select_process_type" class="p-1 text-xs bg-white border border-gray-300 rounded focus:outline-none">
                             <option value="gosra">고스라 🔺 (치수 입력)</option>
@@ -109,7 +114,6 @@
                         <button onclick="addProcessField()" class="bg-slate-800 text-white text-xs px-2.5 py-1 rounded font-bold hover:bg-slate-900">+ 추가</button>
                     </div>
                 </div>
-
                 <div id="dynamic_process_container" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
             </div>
 
@@ -118,7 +122,6 @@
                 <button onclick="resetCurrentForm()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs py-3 rounded-xl font-bold transition-all">이 칸 비우기</button>
                 <button onclick="saveItemToLeft()" class="col-span-2 bg-blue-600 hover:bg-blue-700 text-white text-xs py-3 rounded-xl font-bold transition-all shadow-md shadow-blue-200">← 위 내용을 왼쪽에 저장하기</button>
             </div>
-
         </div>
     </div>
 
@@ -150,25 +153,27 @@
         function calculateCuttingAreaAndLength(text) {
             let totalAreaM2 = 0;
             let totalLengthM = 0;
-            if (!text) return { area: 0, length: 0 };
+            let cutDetails = []; // 재단 치수 상세 저장용
 
-            const lines = text.split(/[\n;]+/);
+            if (!text) return { area: 0, length: 0, details: [] };
             
+            const lines = text.split(/[\n;]+/);
             lines.forEach(line => {
                 if(!line.trim()) return;
                 const parts = line.match(/\d+/g);
-                
                 if (parts && parts.length >= 2) {
                     const w = parseInt(parts[0]);
                     const h = parseInt(parts[1]);
                     // 마진 6mm 포함 면적 및 길이 계산
                     totalAreaM2 += ((w + 6) * (h + 6)) / 1000000;
                     totalLengthM += (w + h) / 1000;
+                    cutDetails.push(`${w}×${h}`);
                 } else if (parts && parts.length === 1) {
                     totalLengthM += parseInt(parts[0]) / 1000;
+                    cutDetails.push(`${parts[0]}mm`);
                 }
             });
-            return { area: totalAreaM2, length: parseFloat(totalLengthM.toFixed(2)) };
+            return { area: totalAreaM2, length: parseFloat(totalLengthM.toFixed(2)), details: cutDetails };
         }
 
         function addProcessField() {
@@ -190,13 +195,14 @@
         function renderFields() {
             const container = document.getElementById('dynamic_process_container');
             const currentValues = {};
+            
             for(let key in processMaster) {
                 const el = document.getElementById(`proc_${key}`);
                 if(el) currentValues[key] = el.value;
             }
-
+            
             container.innerHTML = '';
-
+            
             for(let key in activeFields) {
                 const meta = processMaster[key];
                 const div = document.createElement('div');
@@ -208,7 +214,7 @@
                 } else {
                     inputHtml = `<input type="number" id="proc_${key}" class="w-full p-1.5 bg-gray-50 border border-gray-200 rounded text-center font-bold" value="0" oninput="calculateAll()">`;
                 }
-
+                
                 div.innerHTML = `
                     <div class="flex justify-between items-center font-bold text-gray-700 mb-1">
                         <span>${meta.name}</span>
@@ -218,7 +224,7 @@
                     <div class="text-[10px] text-right text-gray-400 mt-0.5">${meta.type==='text'?'실시간 합계: <span id="span_calc_'+key+'" class="font-bold text-blue-600">0</span> m':''}</div>
                 `;
                 container.appendChild(div);
-
+                
                 if(currentValues[key] !== undefined) {
                     document.getElementById(`proc_${key}`).value = currentValues[key];
                 }
@@ -231,9 +237,11 @@
 
             const selectedSlab = document.getElementById('slab_size').value;
             let slabW = 3200, slabH = 1600;
-            if (selectedSlab === "3600*1600") { slabW = 3600; slabH = 1600; }
-            else if (selectedSlab === "2700*1200") { slabW = 2700; slabH = 1200; }
-            
+            if (selectedSlab === "3600*1600") {
+                slabW = 3600; slabH = 1600;
+            } else if (selectedSlab === "2700*1200") {
+                slabW = 2700; slabH = 1200;
+            }
             const slabArea = (slabW * slabH) / 1000000;
 
             const lossRate = parseInt(document.getElementById('input_loss_rate').value) || 60;
@@ -268,6 +276,11 @@
             const itemName = document.getElementById('item_name').value.trim() || "미지정 자재";
             const slabs = parseInt(document.getElementById('total_slabs').textContent) || 0;
             const cutLen = parseFloat(document.getElementById('res_cut').textContent) || 0;
+            const selectedSlab = document.getElementById('slab_size').value;
+
+            // 입력된 재단 치수 목록 추출 (1번 요구사항 반영)
+            const dataCut = calculateCuttingAreaAndLength(document.getElementById('input_cut').value);
+            const cutDetails = dataCut.details;
 
             let activeProcsData = [];
             for(let key in activeFields) {
@@ -289,11 +302,14 @@
                 return;
             }
 
+            // 배열에 새로운 객체 추가 (누적 데이터 유실 버그 수정 해결책)
             globalSavedItems.push({
                 id: Date.now(),
                 name: itemName,
+                slabSize: selectedSlab,
                 slabs: slabs,
                 cutLen: cutLen,
+                cutDetails: cutDetails, // 치수 상세 배열 저장
                 procs: activeProcsData
             });
 
@@ -303,18 +319,22 @@
 
         function updateLeftListUI() {
             const listEl = document.getElementById('saved_list');
+            
+            // 기존 비어있음 메시지 처리용 요소 선택
             const emptyEl = document.getElementById('empty_msg');
-            listEl.innerHTML = '';
 
             if (globalSavedItems.length === 0) {
-                emptyEl.style.display = 'block';
-                listEl.appendChild(emptyEl);
+                if(emptyEl) emptyEl.style.display = 'block';
+                listEl.innerHTML = '';
+                if(emptyEl) listEl.appendChild(emptyEl);
                 document.getElementById('grand_slabs').textContent = 0;
                 document.getElementById('grand_length').textContent = 0;
                 return;
             }
 
-            emptyEl.style.display = 'none';
+            if(emptyEl) emptyEl.style.display = 'none';
+            listEl.innerHTML = ''; // 덮어쓰지 않고 배열 전체 기반 재렌더링
+
             let totalSlabs = 0, totalCut = 0;
 
             globalSavedItems.forEach(item => {
@@ -322,18 +342,27 @@
                 totalCut += item.cutLen;
 
                 let procLines = item.procs.map(p => `<div>• ${p.name}: <span class="font-bold text-slate-700">${p.val}</span></div>`).join('');
+                
+                // 가로x세로 입력 치수를 시각적으로 노출 (1번 기획 반영)
+                let detailsLine = item.cutDetails.length > 0 
+                    ? `<div class="col-span-2 text-[11px] bg-slate-100 p-1.5 rounded mt-1 text-blue-800 break-words font-sans">📐 입력 치수: ${item.cutDetails.join(', ')}</div>` 
+                    : '';
 
                 const card = document.createElement('div');
-                card.className = "bg-slate-50 p-3 rounded-xl border border-gray-200 text-xs space-y-1";
+                card.className = "bg-slate-50 p-3 rounded-xl border border-gray-200 text-xs space-y-1 relative shadow-sm";
                 card.innerHTML = `
-                    <div class="flex justify-between items-center font-bold text-sm text-slate-800">
-                        <span>📌 ${item.name}</span>
-                        <button onclick="deleteItem(${item.id})" class="text-red-500 font-normal text-xs hover:underline">삭제</button>
+                    <div class="flex justify-between items-start font-bold text-sm text-slate-800">
+                        <div class="flex flex-col">
+                            <span>📌 ${item.name}</span>
+                            <span class="text-[10px] text-gray-400 font-normal">원판 규격: ${item.slabSize}</span>
+                        </div>
+                        <button onclick="deleteItem(${item.id})" class="text-red-500 font-normal text-xs hover:underline pt-0.5">삭제</button>
                     </div>
-                    <div class="text-gray-600 grid grid-cols-2 gap-x-2 gap-y-0.5 font-mono">
+                    <div class="text-gray-600 grid grid-cols-2 gap-x-2 gap-y-0.5 font-mono pt-1">
                         <div>• 원판수량: <span class="text-blue-600 font-bold">${item.slabs}</span> 장</div>
                         <div>• 재단길이: <span class="text-slate-700 font-bold">${item.cutLen}</span> m</div>
                         ${procLines}
+                        ${detailsLine}
                     </div>
                 `;
                 listEl.appendChild(card);
@@ -346,6 +375,19 @@
         function deleteItem(id) {
             globalSavedItems = globalSavedItems.filter(item => item.id !== id);
             updateLeftListUI();
+        }
+
+        // 전체 내역 초기화 기능 (2번 요구사항 확인 절차 반영)
+        function clearAllRecords() {
+            if(globalSavedItems.length === 0) {
+                alert("초기화할 기록이 없습니다.");
+                return;
+            }
+            if (confirm("⚠️ 정말로 모든 누적 기록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.")) {
+                globalSavedItems = [];
+                updateLeftListUI();
+                alert("모든 기록이 초기화되었습니다.");
+            }
         }
 
         function resetCurrentForm() {
