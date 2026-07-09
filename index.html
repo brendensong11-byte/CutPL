@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>다우세라믹앤석재 - 도면 계산기</title>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; background-color: #f4f4f4; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .calculator-container { background-color: white; padding: 2.5rem; border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { text-align: center; color: #333; margin-bottom: 2rem; border-bottom: 2px solid #333; padding-bottom: 0.5rem; }
+        .input-group { margin-bottom: 1.2rem; }
+        .input-group label { display: block; margin-bottom: 0.5rem; font-weight: bold; color: #555; }
+        .input-group input[type="number"] { width: 100%; padding: 0.8rem; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; }
+        .option-group { margin-bottom: 1.2rem; }
+        .option-group label { display: flex; align-items: center; margin-bottom: 0.5rem; cursor: pointer; color: #555; font-size: 0.95rem;}
+        .option-group input[type="checkbox"] { margin-right: 0.8rem; transform: scale(1.2); cursor: pointer;}
+        .result-group { background-color: #333; color: white; padding: 1.5rem; border-radius: 12px; margin-top: 2rem; text-align: center; }
+        .result-group .label { font-size: 1.1rem; color: #aaa; margin-bottom: 0.5rem; }
+        .result-group .price { font-size: 2.2rem; font-weight: bold; }
+        .result-group .won { font-size: 1.2rem; }
+        .reset-btn { width: 100%; padding: 0.8rem; background-color: #ddd; color: #333; border: none; border-radius: 8px; font-size: 1rem; cursor: pointer; transition: background-color 0.2s; margin-top: 1rem;}
+        .reset-btn:hover { background-color: #ccc; }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="calculator-container">
+    <h2>도면 계산기(✨자비스 에디션)</h2>
+
+    <div class="input-group">
+        <label for="cut12">12T 재단 치수 입력 (m)</label>
+        <input type="number" id="cut12" placeholder="예: 1.5" step="0.001">
+    </div>
+    <div class="input-group">
+        <label for="cut6">6T 재단 치수 입력 (m)</label>
+        <input type="number" id="cut6" placeholder="예: 0.8" step="0.001">
+    </div>
+    <div class="input-group">
+        <label for="gosura">고스라 (▲) 치수 입력 (m)</label>
+        <input type="number" id="gosura" placeholder="예: 0.5" step="0.001">
+    </div>
+    <div class="input-group">
+        <label for="baemyun">배면연마 (////) 치수 입력 (m)</label>
+        <input type="number" id="baemyun" placeholder="예: 1.2" step="0.001">
+    </div>
+    <div class="input-group">
+        <label for="dome">뒷도메 (〇〇)(졸리) 치수 입력 (m)</label>
+        <input type="number" id="dome" placeholder="예: 0.9" step="0.001">
+    </div>
+
+    <div class="input-group">
+        <label for="saseon">사선절개 수량 (개)</label>
+        <input type="number" id="saseon" placeholder="예: 1" step="1">
+    </div>
+    <div class="input-group">
+        <label for="seymun">세면대타공 수량 (개)</label>
+        <input type="number" id="seymun" placeholder="예: 1" step="1">
+    </div>
+    <div class="input-group">
+        <label for="sink">싱크타공 수량 (개)</label>
+        <input type="number" id="sink" placeholder="예: 0" step="1">
+    </div>
+    <div class="input-group">
+        <label for="induction">인덕션타공 수량 (개)</label>
+        <input type="number" id="induction" placeholder="예: 0" step="1">
+    </div>
+    <div class="input-group">
+        <label for="sujeon">수전타공 수량 (개)</label>
+        <input type="number" id="sujeon" placeholder="예: 1" step="1">
+    </div>
+    <div class="input-group">
+        <label for="consent">콘센트타공 수량 (개)</label>
+        <input type="number" id="consent" placeholder="예: 0" step="1">
+    </div>
+
+    <div class="result-group">
+        <div class="label">최종 단가</div>
+        <div class="price" id="totalPrice">0<span class="won">원</span></div>
+    </div>
+
+    <button class="reset-btn" id="resetBtn">초기화</button>
+</div>
+
+<script>
+    // --- 단가 설정 (필독! 나중에 수정 가능) ---
+    // 주인님이 알려주신 단가로 변경하세요. (예: 12T 재단 미터당 30,000원)
+    const prices = {
+        cut12: 30000,   // 12T 재단 미터당
+        cut6: 25000,    // 6T 재단 미터당
+        gosura: 20000,  // 고스라 미터당
+        baemyun: 18000, // 배면연마 미터당
+        dome: 15000,    // 뒷도메 미터당
+        saseon: 50000,  // 사선절개 개당
+        seymun: 40000,  // 세면대타공 개당
+        sink: 40000,    // 싱크타공 개당
+        induction: 40000, // 인덕션타공 개당
+        sujeon: 10000,  // 수전타공 개당
+        consent: 15000  // 콘센트타공 개당
+    };
+
+    const inputs = {
+        cut12: document.getElementById('cut12'),
+        cut6: document.getElementById('cut6'),
+        gosura: document.getElementById('gosura'),
+        baemyun: document.getElementById('baemyun'),
+        dome: document.getElementById('dome'),
+        saseon: document.getElementById('saseon'),
+        seymun: document.getElementById('seymun'),
+        sink: document.getElementById('sink'),
+        induction: document.getElementById('induction'),
+        sujeon: document.getElementById('sujeon'),
+        consent: document.getElementById('consent')
+    };
+
+    const totalPriceDisplay = document.getElementById('totalPrice');
+    const resetBtn = document.getElementById('resetBtn');
+
+    // 입력 값이 변경될 때마다 자동 계산
+    for (const key in inputs) {
+        inputs[key].addEventListener('input', updateCalc);
+    }
+
+    // 초기화 버튼
+    resetBtn.addEventListener('click', () => {
+        for (const key in inputs) {
+            inputs[key].value = '';
+        }
+        updateCalc();
+    });
+
+    // 핵심 계산 함수
+    function updateCalc() {
+        let total = 0;
+
+        total += (inputs.cut12.value || 0) * prices.cut12;
+        total += (inputs.cut6.value || 0) * prices.cut6;
+        total += (inputs.gosura.value || 0) * prices.gosura;
+        total += (inputs.baemyun.value || 0) * prices.baemyun;
+        total += (inputs.dome.value || 0) * prices.dome;
+        total += (inputs.saseon.value || 0) * prices.saseon;
+        total += (inputs.seymun.value || 0) * prices.seymun;
+        total += (inputs.sink.value || 0) * prices.sink;
+        total += (inputs.induction.value || 0) * prices.induction;
+        total += (inputs.sujeon.value || 0) * prices.sujeon;
+        total += (inputs.consent.value || 0) * prices.consent;
+
+        // 최종 금액 표시 (콤마 추가)
+        totalPriceDisplay.innerHTML = total.toLocaleString() + '<span class="won">원</span>';
+    }
+
+    // 초기 실행
+    updateCalc();
+</script>
+
+</body>
+</html>
