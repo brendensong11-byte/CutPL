@@ -8,7 +8,7 @@
 </head>
 <body class="bg-slate-100 text-gray-800 min-h-screen py-8 px-4 flex justify-center items-start">
 
-    <!-- 큰 틀 구정 -->
+    <!-- 큰 틀 구성 -->
     <div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         <!-- 📋 [왼쪽] 현장 누적 기록장 -->
@@ -24,26 +24,22 @@
                 <p id="empty_msg" class="text-sm text-gray-400 text-center py-12">저장된 품목이 없습니다.<br>우측에서 계산 후 저장해 주세요.</p>
             </div>
 
-            <!-- 💰 왼쪽 맨 아래: 현장 전체 최종 합계 -->
-            <div class="mt-4 pt-4 border-t border-gray-200 bg-slate-900 text-white p-4 rounded-xl space-y-2 shadow-inner">
+            <!-- 🏢 왼쪽 맨 아래: 현장 전체 최종 합계 (금액 삭제) -->
+            <div class="mt-4 pt-4 border-t border-gray-200 bg-slate-900 text-white p-4 rounded-xl space-y-1 shadow-inner">
                 <span class="text-xs font-bold text-amber-400 uppercase tracking-wider block">🏢 현장 총 합계 (누적)</span>
-                <div class="grid grid-cols-2 gap-y-1 text-xs text-gray-300">
-                    <div>총 원자재(슬랩): <span id="grand_slabs" class="font-bold text-white text-sm">0</span> 장</div>
-                    <div>총 재단 길이: <span id="grand_length" class="font-bold text-white text-sm">0</span> m</div>
-                </div>
-                <div class="flex justify-between items-center pt-2 border-t border-slate-700 mt-1">
-                    <span class="text-sm font-bold">현장 총 결제 단가:</span>
-                    <span id="grand_price" class="text-xl font-black text-amber-400">0 원</span>
+                <div class="grid grid-cols-2 gap-y-1 text-sm text-gray-200 pt-1">
+                    <div>총 원판(슬랩): <span id="grand_slabs" class="font-bold text-white text-base">0</span> 장</div>
+                    <div>총 재단 길이: <span id="grand_length" class="font-bold text-white text-base">0</span> m</div>
                 </div>
             </div>
         </div>
 
-        <!-- ✍️ [오른쪽] 자재 계산 및 입력창 -->
+        <!-- ✍️ [오른쪽] 세라믹 계산 및 입력창 -->
         <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-xl border border-gray-100 space-y-5">
             
             <div class="border-b border-gray-100 pb-3 text-center">
                 <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">
-                    도면 계산기<span class="text-blue-600 font-normal text-base"> (✨brenden 에디션)</span>
+                    도면 계산기<span class="text-blue-600 font-normal text-base"> (✨SketchCut 연동 에디션)</span>
                 </h1>
             </div>
 
@@ -62,9 +58,25 @@
                 </div>
             </div>
 
-            <!-- 필요 수량 -->
+            <!-- 🎚️ 무늬 맞춤 로스율 조절 슬라이더 (SketchCut 기준 적용) -->
+            <div class="bg-amber-50 p-3 rounded-xl border border-amber-200 space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="font-bold text-amber-900">✂️ SketchCut 기준 무늬 방향 및 로스율 조정</span>
+                    <span class="font-mono bg-white px-2 py-0.5 rounded border border-amber-300 text-amber-700">원판 자재 효율: <span id="loss_percent" class="font-bold">70</span>%</span>
+                </div>
+                <input type="range" id="input_loss_rate" min="40" max="85" value="70" step="5" class="w-full h-2 bg-amber-200 rounded-lg appearance-none cursor-pointer" oninput="calculateAll()">
+                <div class="flex justify-between text-[10px] text-amber-600 px-1">
+                    <span>⚠️ 무늬 방향 엄격 고정 (로스 많음)</span>
+                    <span>⚡ 일반 재단 / 자투리 활용 (알뜰)</span>
+                </div>
+            </div>
+
+            <!-- 필요 수량창 -->
             <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100 flex justify-between items-center text-sm">
-                <span class="font-bold text-gray-700">현재 자재 필요 원판 수량:</span>
+                <div class="flex flex-col">
+                    <span class="font-bold text-gray-700">예측 필요 원판 수량:</span>
+                    <span id="loss_tip_text" class="text-[10px] text-blue-500 font-medium">무늬 고정 방향성 기준 계산 중</span>
+                </div>
                 <span class="text-base font-black text-blue-700"><span id="total_slabs">0</span> 장</span>
             </div>
 
@@ -72,15 +84,14 @@
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-1">재단 치수 입력 (mm 단위)</label>
                 <textarea id="input_cut" class="w-full p-3 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50" rows="3" placeholder="예: 2450*860" oninput="calculateAll()"></textarea>
-                <div class="text-xs text-right text-gray-500 mt-1">현재 재단 총 길이: <span id="res_cut" class="font-bold text-blue-600">0</span> m</div>
+                <div class="text-xs text-right text-gray-500 mt-1">현재 품목 재단 총 길이: <span id="res_cut" class="font-bold text-blue-600">0</span> m</div>
             </div>
 
-            <!-- 🔥 [핵심] 가공 동적 추가 섹션 -->
+            <!-- 가공 동적 추가 섹션 -->
             <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-4">
                 <div class="flex justify-between items-center border-b pb-2 border-slate-200">
                     <span class="text-xs font-bold text-slate-700 tracking-wider flex items-center gap-1">🛠️ 가공 및 타공 선택 입력</span>
                     
-                    <!-- 가공 선택 셀렉트박스 -->
                     <div class="flex gap-1">
                         <select id="select_process_type" class="p-1 text-xs bg-white border border-gray-300 rounded focus:outline-none">
                             <option value="gosra">고스라 🔺 (mm단위 치수)</option>
@@ -98,23 +109,7 @@
                     </div>
                 </div>
 
-                <!-- 추가된 가공 입력칸들이 생성되는 공간 -->
-                <div id="dynamic_process_container" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <!-- JavaScript로 입력창이 여기에 들어옵니다 -->
-                </div>
-            </div>
-
-            <!-- 단가 및 최종가 -->
-            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-2">
-                <label class="block text-xs font-bold text-gray-700">현재 자재의 단가 직접 입력 (조정창)</label>
-                <div class="flex gap-2">
-                    <input type="number" id="unit_price" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm font-mono" value="0" oninput="calculateAll()" placeholder="금액 입력">
-                    <span class="flex items-center text-sm font-bold text-gray-500">원</span>
-                </div>
-                <div class="flex justify-between items-center text-sm pt-2 border-t border-dashed border-gray-200">
-                    <span class="font-bold text-gray-800">현재 품목 최종가:</span>
-                    <span id="totalPrice" class="text-base font-extrabold text-red-500">0 원</span>
-                </div>
+                <div id="dynamic_process_container" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
             </div>
 
             <!-- 하단 버튼 -->
@@ -128,10 +123,8 @@
 
     <script>
         let globalSavedItems = [];
-        // 현재 활성화된 동적 가공 필드를 관리하는 객체
         let activeFields = {};
 
-        // 가공 타입 매핑 마스터 데이터 (나중에 새로운 가공이 생기면 여기에 추가만 하면 끝!)
         const processMaster = {
             gosra: { name: '고스라 🔺', type: 'text', placeholder: '예: 2450+1200', unit: 'm' },
             back: { name: '배면연마 ////', type: 'text', placeholder: '예: 1800+600', unit: 'm' },
@@ -164,7 +157,8 @@
                 if (parts && parts.length >= 2) {
                     const w = parseInt(parts[0]);
                     const h = parseInt(parts[1]);
-                    totalAreaM2 += ((w + 3) * (h + 3)) / 1000000;
+                    // 칼날 두께(3mm) 및 사방 마진을 감안한 면적 산출
+                    totalAreaM2 += ((w + 6) * (h + 6)) / 1000000;
                     totalLengthM += (w + h) / 1000;
                 } else if (parts && parts.length === 1) {
                     totalLengthM += parseInt(parts[0]) / 1000;
@@ -173,29 +167,24 @@
             return { area: totalAreaM2, length: parseFloat(totalLengthM.toFixed(2)) };
         }
 
-        // ➕ 선택한 가공 필드를 화면에 동적으로 생성하는 함수
         function addProcessField() {
             const type = document.getElementById('select_process_type').value;
             if (activeFields[type]) {
                 alert("이미 추가된 항목입니다.");
                 return;
             }
-
             activeFields[type] = true;
             renderFields();
         }
 
-        // ❌ 특정 가공 필드를 화면에서 제거하는 함수
         function removeField(type) {
             delete activeFields[type];
             renderFields();
             calculateAll();
         }
 
-        // 필드 재생성 그리기 로직
         function renderFields() {
             const container = document.getElementById('dynamic_process_container');
-            // 기존 입력값 임시 보관
             const currentValues = {};
             for(let key in processMaster) {
                 const el = document.getElementById(`proc_${key}`);
@@ -226,7 +215,6 @@
                 `;
                 container.appendChild(div);
 
-                // 보관했던 값 복원
                 if(currentValues[key] !== undefined) {
                     document.getElementById(`proc_${key}`).value = currentValues[key];
                 }
@@ -237,19 +225,29 @@
             const dataCut = calculateCuttingAreaAndLength(document.getElementById('input_cut').value);
             document.getElementById('res_cut').textContent = dataCut.length;
 
-            // 원판 계산
             const selectedSlab = document.getElementById('slab_size').value;
             let slabW = 3600, slabH = 1600;
             if (selectedSlab === "2700*1200") { slabW = 2700; slabH = 1200; }
             const slabArea = (slabW * slabH) / 1000000;
 
+            const lossRate = parseInt(document.getElementById('input_loss_rate').value) || 70;
+            document.getElementById('loss_percent').textContent = lossRate;
+
+            const tipEl = document.getElementById('loss_tip_text');
+            if (lossRate <= 55) {
+                tipEl.innerHTML = "⚠️ 무늬결 완벽 매칭 모드 (조각 회전 금지 및 마진 극대화)";
+            } else if (lossRate <= 70) {
+                tipEl.innerHTML = "✨ SketchCut 기반 일반적인 아일랜드 무늬연결 기준";
+            } else {
+                tipEl.innerHTML = "⚡ 결 방향과 상관없이 남는 자투리를 쪼개 쓰는 알뜰 모드";
+            }
+
             let neededSlabs = 0;
             if (dataCut.area > 0) {
-                neededSlabs = Math.ceil(dataCut.area / (slabArea * 0.85));
+                neededSlabs = Math.ceil(dataCut.area / (slabArea * (lossRate / 100)));
             }
             document.getElementById('total_slabs').textContent = neededSlabs;
 
-            // 동적으로 켜진 텍스트(치수) 필드 미터수 계산 계산
             for(let key in activeFields) {
                 if(processMaster[key].type === 'text') {
                     const val = document.getElementById(`proc_${key}`).value;
@@ -258,18 +256,13 @@
                     if(span) span.textContent = mVal;
                 }
             }
-
-            const unitPrice = parseInt(document.getElementById('unit_price').value) || 0;
-            document.getElementById('totalPrice').textContent = unitPrice.toLocaleString() + ' 원';
         }
 
         function saveItemToLeft() {
             const itemName = document.getElementById('item_name').value.trim() || "미지정 자재";
             const slabs = parseInt(document.getElementById('total_slabs').textContent) || 0;
             const cutLen = parseFloat(document.getElementById('res_cut').textContent) || 0;
-            const price = parseInt(document.getElementById('unit_price').value) || 0;
 
-            // 추가된 가공 데이터 수집
             let activeProcsData = [];
             for(let key in activeFields) {
                 const meta = processMaster[key];
@@ -277,19 +270,15 @@
                 if(inputEl) {
                     if(meta.type === 'text') {
                         const mLen = parseFloat(parseAndSumToMeters(inputEl.value)) || 0;
-                        if(mLen > 0) {
-                            activeProcsData.push({ name: meta.name, val: mLen + ' m' });
-                        }
+                        if(mLen > 0) activeProcsData.push({ name: meta.name, val: mLen + ' m' });
                     } else {
                         const count = parseInt(inputEl.value) || 0;
-                        if(count > 0) {
-                            activeProcsData.push({ name: meta.name, val: count + ' 개' });
-                        }
+                        if(count > 0) activeProcsData.push({ name: meta.name, val: count + ' 개' });
                     }
                 }
             }
 
-            if(slabs === 0 && cutLen === 0 && price === 0 && activeProcsData.length === 0) {
+            if(slabs === 0 && cutLen === 0 && activeProcsData.length === 0) {
                 alert("입력된 내용이 없습니다.");
                 return;
             }
@@ -299,7 +288,6 @@
                 name: itemName,
                 slabs: slabs,
                 cutLen: cutLen,
-                price: price,
                 procs: activeProcsData
             });
 
@@ -317,19 +305,16 @@
                 listEl.appendChild(emptyEl);
                 document.getElementById('grand_slabs').textContent = 0;
                 document.getElementById('grand_length').textContent = 0;
-                document.getElementById('grand_price').textContent = "0 원";
                 return;
             }
 
             emptyEl.style.display = 'none';
-            let totalSlabs = 0, totalCut = 0, totalPrice = 0;
+            let totalSlabs = 0, totalCut = 0;
 
             globalSavedItems.forEach(item => {
                 totalSlabs += item.slabs;
                 totalCut += item.cutLen;
-                totalPrice += item.price;
 
-                // 동적 가공 명세 텍스트 조립
                 let procLines = item.procs.map(p => `<div>• ${p.name}: <span class="font-bold text-slate-700">${p.val}</span></div>`).join('');
 
                 const card = document.createElement('div');
@@ -344,16 +329,12 @@
                         <div>• 재단길이: <span class="text-slate-700 font-bold">${item.cutLen}</span> m</div>
                         ${procLines}
                     </div>
-                    <div class="text-right border-t border-gray-200/60 pt-1 mt-1 font-bold text-slate-900">
-                        단가: <span class="text-red-500">${item.price.toLocaleString()}</span> 원
-                    </div>
                 `;
                 listEl.appendChild(card);
             });
 
             document.getElementById('grand_slabs').textContent = totalSlabs;
             document.getElementById('grand_length').textContent = totalCut.toFixed(2);
-            document.getElementById('grand_price').textContent = totalPrice.toLocaleString() + " 원";
         }
 
         function deleteItem(id) {
@@ -364,8 +345,7 @@
         function resetCurrentForm() {
             document.getElementById('item_name').value = '';
             document.getElementById('input_cut').value = '';
-            document.getElementById('unit_price').value = 0;
-            // 활성 필드 초기화 및 화면 비우기
+            document.getElementById('input_loss_rate').value = 70; // 기본 효율 복원
             activeFields = {};
             renderFields();
             calculateAll();
