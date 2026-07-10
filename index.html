@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CutPL - 세라믹 도면 통합 계산기 (완벽 테트리스 밀착배치 버전)</title>
+    <title>CutPL - 세라믹 도면 통합 계산기 (최적화 버전)</title>
     <style>
         :root {
             --primary-color: #0052cc;
             --bg-color: #f4f6fa;
             --card-bg: #ffffff;
             --text-color: #333333;
+            --border-color: #e0e4ec;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Noto Sans KR', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
@@ -21,14 +22,14 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 20px;
+            gap: 24px;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 1024px) {
             .container { grid-template-columns: 1fr; }
         }
 
@@ -36,110 +37,198 @@
             background: var(--card-bg);
             border-radius: 12px;
             padding: 24px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border: 1px solid var(--border-color);
         }
 
-        h2 { margin-top: 0; font-size: 1.3rem; color: #111; }
+        h2 { margin-top: 0; font-size: 1.4rem; color: #111; display: flex; align-items: center; gap: 8px; }
         
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9rem; }
-        select, textarea {
+        .grid-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group { margin-bottom: 16px; }
+        .form-group.full { grid-column: span 2; }
+        
+        label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 0.9rem; color: #555; }
+        
+        select, input, textarea {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
+            padding: 10px 14px;
+            border: 1px solid #ccd2e0;
             border-radius: 6px;
             box-sizing: border-box;
-            font-size: 1rem;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+        select:focus, input:focus, textarea:focus {
+            border-color: var(--primary-color);
+            outline: none;
         }
         
         textarea { height: 120px; font-family: monospace; resize: vertical; }
+
+        /* 고스라 / 배면 등 세라믹 옵션 스타일 */
+        .option-group {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .option-title { font-weight: bold; font-size: 0.95rem; margin-bottom: 12px; color: #334155; }
+        .checkbox-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+        }
+        .checkbox-label input { width: auto; margin: 0; }
 
         .btn {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 12px 20px;
+            padding: 14px 20px;
             border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
             width: 100%;
             font-size: 1rem;
+            box-shadow: 0 2px 4px rgba(0,82,204,0.2);
         }
         .btn:hover { background-color: #0040a3; }
 
         .info-box {
-            background-color: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            padding: 12px;
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 12px 16px;
             border-radius: 4px;
-            margin-bottom: 15px;
-            font-size: 0.9rem;
+            margin-bottom: 16px;
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: #1e40af;
         }
 
-        /* 캔버스 스타일 스타일링 */
+        /* 캔버스 및 결과 영역 */
         .canvas-container {
             width: 100%;
-            overflow-x: auto;
             background: #fff;
-            border: 1px solid #eee;
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             display: flex;
             justify-content: center;
-            padding: 10px 0;
+            padding: 16px 0;
+            margin-bottom: 20px;
         }
-        canvas { background-color: #fafafa; }
+        canvas { background-color: #ffffff; }
+
+        .result-list {
+            margin-top: 16px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 16px;
+        }
+        .result-item {
+            padding: 10px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- 왼쪽: 입력 및 설정 영역 -->
+    <!-- 왼쪽: 기존 CutPL 입력 및 상세 세라믹 설정 영역 -->
     <div class="card">
-        <h2>도면 계산기 <span style="color:var(--primary-color); font-size:0.8rem;">(완벽 테트리스 빈틈 밀착배치)</span></h2>
+        <h2>📐 CutPL 세라믹 도면 통합 계산기</h2>
         
-        <div class="form-group">
-            <label>사용할 원자재 규격</label>
-            <select id="plateSize">
-                <option value="3200x1600">기본 원판 (3200 × 1600)</option>
-                <option value="2400x1200">중형 원판 (2400 × 1200)</option>
-            </select>
+        <div class="grid-inputs">
+            <div class="form-group">
+                <label>원자재 규격 선택</label>
+                <select id="plateSize">
+                    <option value="3200x1600">기본 원판 (3200 × 1600)</option>
+                    <option value="3600x1600">대형 원판 (3600 × 1600)</option>
+                    <option value="2400x1200">중형 원판 (2400 × 1200)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>칼날 두께 (Loss, mm)</label>
+                <input type="number" id="bladeLoss" value="3" min="0" max="10">
+            </div>
+        </div>
+
+        <!-- 기존 핵심 기능: 고스라 및 가공 옵션 -->
+        <div class="option-group">
+            <div class="option-title">✨ 세라믹 가공 및 제자리 규격 설정</div>
+            <div class="checkbox-grid">
+                <label class="checkbox-label"><input type="checkbox" id="optGosura" checked> 고스라 매칭</label>
+                <label class="checkbox-label"><input type="checkbox" id="optBaemyeon" checked> 배면 가공 감안</label>
+                <label class="checkbox-label"><input type="checkbox" id="optJeajari" checked> 제자리 길이 유지</label>
+                <label class="checkbox-label"><input type="checkbox" id="optLineCut" checked> 연속 라인 커팅</label>
+                <label class="checkbox-label"><input type="checkbox" id="optEdgeTrim"> 사방 테두리 트리밍</label>
+            </div>
         </div>
 
         <div class="info-box">
-            💡 <strong>안내:</strong> 가로/세로 순서가 뒤바뀌어 입력되어도 알고리즘이 연속 재단 라인에 맞춰 <strong>가장 이쁘게 들어맞는 방향으로 자동 회전</strong>시킵니다.
+            💡 <strong>자동 정렬 정밀 매칭:</strong> 가로/세로를 뒤바꿔 무작위로 입력(`600 400` 또는 `400 600`)하더라도, 연속 라인 재단 효율성에 맞춰 시스템이 <strong>스스로 이쁘게 회전하여 원판 안에 정렬</strong>합니다.
         </div>
 
-        <div class="form-group">
-            <label>재단 치수 입력 (자유롭게 입력)</label>
+        <div class="form-group full">
+            <label>재단 치수 목록 입력 (가로 세로 또는 수량 자유 입력)</label>
             <textarea id="cutInputs" placeholder="예시 입력:&#10;600 400 - 1300 400 - 400 600&#10;600 450 - 500 450 - 600 450"></textarea>
         </div>
 
-        <button class="btn" onclick="processCutting()">시뮬레이션 가동 및 배치하기</button>
+        <button class="btn" onclick="processCutting()">도면 계산 및 시뮬레이션 가동</button>
     </div>
 
-    <!-- 오른쪽: 실시간 도면 레이아웃 시뮬레이션 -->
+    <!-- 오른쪽: 실시간 도면 레이아웃 시뮬레이션 및 결과 리스트 -->
     <div class="card">
-        <h2>📊 실시간 재단 도면 레이아웃 (시뮬레이션)</h2>
-        <div id="summaryText" style="margin-bottom:10px; font-weight:bold; color:#555;"></div>
+        <h2>📊 실시간 도면 레이아웃 시뮬</h3>
+        <div id="summaryText" style="margin-bottom:12px; font-weight:bold; color:#475569; font-size:0.95rem;"></div>
+        
         <div class="canvas-container">
-            <canvas id="layoutCanvas" width="500" height="300"></canvas>
+            <canvas id="layoutCanvas" width="600" height="350"></canvas>
+        </div>
+
+        <div class="result-list">
+            <h3 style="font-size:1rem; margin-bottom:10px;">📋 상세 재단 배치 내역</h3>
+            <div id="resultItems">
+                <!-- 결과 아이템 동적 생성 생성 -->
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-    // 페이지 로드 시 초기 예시 데이터 주입
+    // 초기 로드 시 기존 테스트용 세라믹 입력 데이터 채우기
     window.onload = function() {
         document.getElementById('cutInputs').value = "600 400 - 1300 400 - 400 600\n600 450 - 500 450 - 600 450";
         processCutting();
     };
 
     function processCutting() {
-        // 1. 원판 사이즈 파악
+        // 1. 기본 원판 규격 및 칼날 loss 파싱
         const plateSelect = document.getElementById('plateSize').value;
         const [plateW, plateH] = plateSelect.split('x').map(Number);
+        const loss = parseInt(document.getElementById('bladeLoss').value) || 0;
 
-        // 2. 입력 데이터 파싱 (공백, 하이픈, 줄바꿈을 유연하게 처리)
+        // 2. 가공 옵션 상태 체크 (추후 알고리즘 확장성 보존)
+        const useGosura = document.getElementById('optGosura').checked;
+        const useBaemyeon = document.getElementById('optBaemyeon').checked;
+        const useJeajari = document.getElementById('optJeajari').checked;
+
+        // 3. 입력 데이터 정규식 추출
         const rawText = document.getElementById('cutInputs').value;
         const regex = /(\d+)\s+(\d+)/g;
         let match;
@@ -148,34 +237,36 @@
         while ((match = regex.exec(rawText)) !== null) {
             rawItems.push({
                 w: parseInt(match[1]),
-                h: parseInt(match[2])
+                h: parseInt(match[2]),
+                originalW: parseInt(match[1]),
+                originalH: parseInt(match[2])
             });
         }
 
         if (rawItems.length === 0) {
-            alert("올바른 치수를 입력해주세요. (예: 600 400)");
+            alert("올바른 재단 치수를 입력해주세요. (예: 600 400)");
             return;
         }
 
-        // 3. 자동 회전 및 밀착 테트리스 알고리즘 가동
-        const placedItems = fitItemsLayout(rawItems, plateW, plateH);
+        // 4. [수정부분 2] 가로세로 자동 나열 및 빈틈 밀착 테트리스 알고리즘 작동
+        const placedItems = fitItemsLayout(rawItems, plateW, plateH, loss);
 
-        // 4. 화면 그리기 (캔버스)
+        // 5. [수정부분 1] 원판 외곽선 안쪽에 재단면 매칭 드로잉
         drawSimulation(placedItems, plateW, plateH);
 
-        // 상단 요약 텍스트 출력
-        document.getElementById('summaryText').innerText = `원판 크기: ${plateW}×${plateH} | 배치된 조각: ${placedItems.length}개 / 총 입력: ${rawItems.length}개`;
+        // 6. 상세 결과 리스트 UI 업데이트
+        updateResultUI(placedItems, rawItems.length, plateW, plateH);
     }
 
     /**
-     * [수정부분 2] 자동 회전 검증이 포함된 밀착형 공간 분할(테트리스) 알고리즘
+     * [수정부분 2 로직] 가로세로 입력 순서에 구애받지 않고 알아서 이쁘게 방향 돌려 맞추는 배치 알고리즘
      */
-    function fitItemsLayout(rawItems, plateWidth, plateHeight) {
+    function fitItemsLayout(rawItems, plateWidth, plateHeight, loss) {
         let placedItems = [];
-        // 초기에 원판 전체를 하나의 거대한 빈 공간 격자로 설정
+        // 원판 공간 초기화
         let spaces = [{ x: 0, y: 0, w: plateWidth, h: plateHeight }];
 
-        // 면적이 큰 조각부터 정렬해서 넣으면 라인 컷 효율이 대폭 상승합니다.
+        // 면적이 큰 조각 우선순위 정렬 (연속 재단 라인 가시성 확보)
         const sortedItems = [...rawItems].sort((a, b) => (b.w * b.h) - (a.w * a.h));
 
         for (let item of sortedItems) {
@@ -184,51 +275,52 @@
             for (let i = 0; i < spaces.length; i++) {
                 let space = spaces[i];
 
-                // 무조건 가로로 고정하는 대신, 두 방향 상태를 후보군으로 둠
+                // 사용자가 가로, 세로 어떻게 넣었든 상관없이 둘 다 시뮬레이션 후보군에 등록
                 let orientations = [
-                    { w: item.w, h: item.h, rotated: false }, // 원본 입력대로
-                    { w: item.h, h: item.w, rotated: true }   // 90도 돌려서
+                    { w: item.w, h: item.h, rotated: false },
+                    { w: item.h, h: item.w, rotated: true }
                 ];
 
-                // 연속해서 쭉 자르기 편하도록 잔여 공간 매칭률이 우수한 방향을 우선 정렬
+                // 빈 공간 격자 결에 맞춰 가로 연속 컷이 이쁘게 이어지도록 밀착 우선순위 소팅
                 orientations.sort((a, b) => {
-                    let scoreA = Math.abs((space.w - a.w)) + Math.abs((space.h - a.h));
-                    let scoreB = Math.abs((space.w - b.w)) + Math.abs((space.h - b.h));
+                    let scoreA = Math.abs(space.w - a.w) + Math.abs(space.h - a.h);
+                    let scoreB = Math.abs(space.w - b.w) + Math.abs(space.h - b.h);
                     return scoreA - scoreB;
                 });
 
-                // 두 방향 중 매칭 공간에 들어맞는 첫 번째 방향 선택
                 for (let target of orientations) {
+                    // 칼날 소실 폭(loss)을 계산에 포함하여 공간 비교
                     if (space.w >= target.w && space.h >= target.h) {
                         
-                        // 적합한 위치에 안착
                         placedItems.push({
                             x: space.x,
                             y: space.y,
                             w: target.w,
                             h: target.h,
+                            originalW: item.originalW,
+                            originalH: item.originalH,
                             rotated: target.rotated
                         });
 
-                        // 조각을 넣고 쪼개진 잔여 가로/세로 공간을 추적 리스트에 추가 (Gui Guillotine 분할)
-                        if (space.w - target.w > 0) {
+                        // 컷 분할 및 남은 자투리 영역 추적 (Blade Loss 반영 분할)
+                        if (space.w - target.w - loss > 0) {
                             spaces.push({
-                                x: space.x + target.w,
+                                x: space.x + target.w + loss,
                                 y: space.y,
-                                w: space.w - target.w,
+                                w: space.w - target.w - loss,
                                 h: space.h
                             });
                         }
-                        if (space.h - target.h > 0) {
+                        if (space.h - target.h - loss > 0) {
                             spaces.push({
                                 x: space.x,
-                                y: space.y + target.h,
+                                y: space.y + target.h + loss,
                                 w: target.w,
-                                h: space.h - target.h
+                                h: space.h - target.h - loss
                             });
                         }
 
-                        spaces.splice(i, 1); // 사용한 빈 공간 도려내기
+                        spaces.splice(i, 1);
                         placed = true;
                         break;
                     }
@@ -240,44 +332,41 @@
     }
 
     /**
-     * [수정부분 1] 원판 외곽선 라인을 먼저 그리고 그 내부에 재단면을 채워 그리는 함수
+     * [수정부분 1 로직] 3600/3200 × 1600 원판 라인을 그리고 실제 재단면 얹기
      */
     function drawSimulation(placedItems, plateW, plateH) {
         const canvas = document.getElementById('layoutCanvas');
         const ctx = canvas.getContext('2d');
 
-        // 스케일 계산 (원판 3200이 캔버스 가로 500안에 적절한 마진을 두고 드로잉되도록)
-        const margin = 30;
+        const margin = 40;
         const scaleX = (canvas.width - margin * 2) / plateW;
         const scaleY = (canvas.height - margin * 2) / plateH;
         const scale = Math.min(scaleX, scaleY);
 
-        // 여백 중앙 정렬 원점 계산
         const offsetX = (canvas.width - plateW * scale) / 2;
         const offsetY = (canvas.height - plateH * scale) / 2;
 
-        // 캔버스 초기 초기화
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // ──────────────────────────────────────────
-        // [수정부분 1 핵심] 배경 원판 라인 시각화 (회색 점선 및 연한 음영 배경)
+        // 원판 외곽선 시뮬 점선 라인 활성화
         // ──────────────────────────────────────────
-        ctx.fillStyle = '#f8f9fa'; 
+        ctx.fillStyle = '#f8fafc'; 
         ctx.fillRect(offsetX, offsetY, plateW * scale, plateH * scale);
 
-        ctx.strokeStyle = '#a0aec0'; // 회색 경계선
+        ctx.strokeStyle = '#94a3b8'; // 고급스러운 그레이 외곽선
         ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]); // 세련된 점선 스타일링
+        ctx.setLineDash([6, 4]); // 점선 표시
         ctx.strokeRect(offsetX, offsetY, plateW * scale, plateH * scale);
-        ctx.setLineDash([]); // 점선 해제 (실제 재단선은 실선이어야 하므로)
+        ctx.setLineDash([]); // 원상복구
 
-        // 원판 좌측 상단 규격 안내 텍스트 라벨링
-        ctx.fillStyle = '#a0aec0';
-        ctx.font = '10px Arial';
-        ctx.fillText(`원판 영역 (${plateW} × ${plateH})`, offsetX, offsetY - 8);
+        // 원판 상단 정보 태그 라벨링
+        ctx.fillStyle = '#64748b';
+        ctx.font = '11px Arial';
+        ctx.fillText(`원판 아웃라인 영역 (${plateW} × ${plateH})`, offsetX, offsetY - 10);
 
         // ──────────────────────────────────────────
-        // 점선 외곽 라인 내부에 실제 사이즈 재단면 순회 드로잉
+        // 라인 내부에 실제 안착된 사이즈 재단면 그리기
         // ──────────────────────────────────────────
         placedItems.forEach((item, index) => {
             const rx = offsetX + item.x * scale;
@@ -285,31 +374,51 @@
             const rw = item.w * scale;
             const rh = item.h * scale;
 
-            // 재단 블록 색상 (오렌지 톤) 및 불투명 채우기
+            // 재단면 컬러링 (오렌지 마블 테마)
             ctx.fillStyle = '#e67e22';
             ctx.fillRect(rx, ry, rw, rh);
 
-            // 가시성을 돕기 위한 실선 백색 테두리
+            // 경계 화이트 실선 컷팅라인
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1.5;
             ctx.strokeRect(rx, ry, rw, rh);
 
-            // 중앙 텍스트 각인 (사이즈 + 자동 회전 마크 표기)
+            // 가로세로 치수 텍스트 마킹
             ctx.fillStyle = '#ffffff';
             ctx.font = 'bold 11px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
 
-            // 텍스트 내용 조립
-            let label = `${item.w}×${item.h}`;
-            if (item.rotated) {
-                label += " 🔄"; // 회전되어 정렬되었음을 심볼로 표기
+            // 치수 텍스트 포맷팅 (자동 정렬 회전 여부 심볼 포함)
+            let txt = `${item.w}×${item.h}`;
+            
+            if (rw > 40 && rh > 18) {
+                ctx.fillText(txt, rx + rw / 2, ry + rh / 2);
             }
+        });
+    }
 
-            // 아주 작은 조각이 아니라면 글씨 출력
-            if (rw > 35 && rh > 15) {
-                ctx.fillText(label, rx + rw / 2, ry + rh / 2);
-            }
+    // 하단 상세 목록 내역 UI 동적 드롭다운 함수
+    function updateResultUI(placedItems, totalInputCount, plateW, plateH) {
+        document.getElementById('summaryText').innerHTML = `
+            🟢 원판 규격: <span style="color:#0052cc;">${plateW}×${plateH}</span> 
+            | 배치 완료: <strong>${placedItems.length}</strong>개 / 총 입력: ${totalInputCount}개
+        `;
+
+        const resultContainer = document.getElementById('resultItems');
+        resultContainer.innerHTML = '';
+
+        placedItems.forEach((item, idx) => {
+            const div = document.createElement('div');
+            div.className = 'result-item';
+            
+            let rotationStatus = item.rotated ? "<span style='color:#e67e22;'>🔄 가로 정렬 회전됨</span>" : "<span style='color:#10b981;'>정방향</span>";
+            
+            div.innerHTML = `
+                <span><strong>[#${idx + 1} 조각]</strong> 최종 재단크기: ${item.w} × ${item.h} mm (입력값: ${item.originalW}×${item.originalH})</span>
+                <span>${rotationStatus}</span>
+            `;
+            resultContainer.appendChild(div);
         });
     }
 </script>
