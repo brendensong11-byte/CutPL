@@ -20,7 +20,7 @@
                     </h2>
                     <p class="text-[11px] text-gray-400 mt-0.5">우측에서 입력 후 '품목 저장하기'를 누르면 여기에 쌓입니다.</p>
                 </div>
-                <!-- 🧹 전체 내역 초기화 버튼 추가 -->
+                <!-- 🧹 전체 내역 초기화 버튼 -->
                 <button onclick="clearAllRecords()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs px-2.5 py-1.5 rounded-lg font-bold transition-all border border-red-200">
                     🧹 전체 초기화
                 </button>
@@ -31,7 +31,7 @@
                 <p id="empty_msg" class="text-sm text-gray-400 text-center py-12">저장된 품목이 없습니다.<br>우측에서 계산 후 저장해 주세요.</p>
             </div>
 
-            <!-- 🏢 현장 전체 최종 합계 (원판 및 재단 정보만 깔끔하게 표시) -->
+            <!-- 🏢 현장 전체 최종 합계 -->
             <div class="mt-4 pt-4 border-t border-gray-200 bg-slate-900 text-white p-4 rounded-xl space-y-1 shadow-inner">
                 <span class="text-xs font-bold text-amber-400 uppercase tracking-wider block">🏢 현장 총 합계 (누적)</span>
                 <div class="grid grid-cols-2 gap-y-1 text-sm text-gray-200 pt-1">
@@ -45,23 +45,48 @@
         <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-xl border border-gray-100 space-y-5">
             <div class="border-b border-gray-100 pb-3 text-center">
                 <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">
-                    도면 계산기<span class="text-blue-600 font-normal text-base"> (✨무늬맞춤 간편 에디션)</span>
+                    도면 계산기<span class="text-blue-600 font-normal text-base"> (✨무늬맞춤 실무 에디션)</span>
                 </h1>
             </div>
 
-            <!-- 자재 정보 (단가/금액 관련 요소 완전 삭제) -->
-            <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200/60">
-                <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1">두께 및 자재명 (구분용)</label>
-                    <input type="text" id="item_name" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="예: 12T 화이트">
+            <!-- 자재 및 두께 정보 입력 (금액 제거, 두께 선택 기능 추가) -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">두께(T) 선택</label>
+                        <select id="item_thickness" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="12T">12T (기본)</option>
+                            <option value="6T">6T</option>
+                            <option value="20T">20T</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-gray-600 mb-1">자재명 (구분용)</label>
+                        <input type="text" id="item_name" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="예: 화이트 스톰, 비앙코">
+                    </div>
                 </div>
+
+                <!-- 사용할 원자재 규격 선택 및 직접 입력(잔재 활용) 로직 -->
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 mb-1">사용할 원자재 규격</label>
-                    <select id="slab_size" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="calculateAll()">
-                        <option value="3200*1600">원판 규격 (3200 * 1600)</option>
-                        <option value="3600*1600">큰 규격 (3600 * 1600)</option>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">사용할 원자재 규격 (잔재 활용 가능)</label>
+                    <select id="slab_size" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="toggleCustomSlabSize()">
+                        <option value="3200*1600">기본 원판 (3200 * 1600)</option>
+                        <option value="3600*1600">큰 원판 (3600 * 1600)</option>
                         <option value="2700*1200">중간 규격 (2700 * 1200)</option>
+                        <option value="custom">📋 잔재 / 자투리 규격 직접 입력</option>
                     </select>
+                </div>
+
+                <!-- 잔재 선택시 동적으로 나타나는 입력창 (가로 세로 순서 고정) -->
+                <div id="custom_slab_inputs" class="hidden grid grid-cols-2 gap-3 bg-amber-50/50 p-2.5 rounded-lg border border-amber-200">
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-0.5">잔재 가로(긴 방향 mm)</label>
+                        <input type="number" id="custom_slab_w" class="w-full p-1.5 bg-white border border-gray-200 rounded text-xs focus:outline-none" placeholder="예: 2000" oninput="calculateAll()">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-0.5">잔재 세로(폭 mm)</label>
+                        <input type="number" id="custom_slab_h" class="w-full p-1.5 bg-white border border-gray-200 rounded text-xs focus:outline-none" placeholder="예: 1600" oninput="calculateAll()">
+                    </div>
                 </div>
             </div>
 
@@ -81,13 +106,13 @@
             <!-- 필요 수량창 -->
             <div class="bg-blue-50/70 p-3 rounded-xl border border-blue-100 flex justify-between items-center text-sm">
                 <div class="flex flex-col">
-                    <span class="font-bold text-gray-700">예측 필요 원판 수량:</span>
+                    <span class="font-bold text-gray-700">예측 필요 원판(잔재) 수량:</span>
                     <span id="loss_tip_text" class="text-[10px] text-blue-500 font-medium">무늬 고정 방향성 기준 계산 중</span>
                 </div>
                 <span class="text-base font-black text-blue-700"><span id="total_slabs">0</span> 장</span>
             </div>
 
-            <!-- 재단 치수 (입력 편의 개선 및 무늬결 정렬) -->
+            <!-- 재단 치수 -->
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-1">재단 치수 입력 (가로 세로 순서대로)</label>
                 <textarea id="input_cut" class="w-full p-3 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50" rows="6" placeholder="숫자 패드로 편하게 입력하세요!&#10;예1) 2450 560 (스페이스바 한 칸)&#10;예2) 2450,560 (쉼표)&#10;예3) 1600/750 (슬래시)&#10;예4) 2450*560 (기존 별표)&#10;※ 무늬결을 맞추려면 긴 방향을 앞(가로)에 적어주세요." oninput="calculateAll()"></textarea>
@@ -142,6 +167,17 @@
             ttanaegi: { name: '따내기', type: 'number', placeholder: '0', unit: '개' }
         };
 
+        function toggleCustomSlabSize() {
+            const select = document.getElementById('slab_size').value;
+            const customDiv = document.getElementById('custom_slab_inputs');
+            if (select === 'custom') {
+                customDiv.classList.remove('hidden');
+            } else {
+                customDiv.classList.add('hidden');
+            }
+            calculateAll();
+        }
+
         function parseAndSumToMeters(text) {
             if (!text) return 0;
             const numbers = text.match(/\d+/g);
@@ -153,7 +189,7 @@
         function calculateCuttingAreaAndLength(text) {
             let totalAreaM2 = 0;
             let totalLengthM = 0;
-            let cutDetails = []; // 재단 치수 상세 저장용
+            let cutDetails = [];
 
             if (!text) return { area: 0, length: 0, details: [] };
             
@@ -164,7 +200,6 @@
                 if (parts && parts.length >= 2) {
                     const w = parseInt(parts[0]);
                     const h = parseInt(parts[1]);
-                    // 마진 6mm 포함 면적 및 길이 계산
                     totalAreaM2 += ((w + 6) * (h + 6)) / 1000000;
                     totalLengthM += (w + h) / 1000;
                     cutDetails.push(`${w}×${h}`);
@@ -237,13 +272,18 @@
 
             const selectedSlab = document.getElementById('slab_size').value;
             let slabW = 3200, slabH = 1600;
+
             if (selectedSlab === "3600*1600") {
                 slabW = 3600; slabH = 1600;
             } else if (selectedSlab === "2700*1200") {
                 slabW = 2700; slabH = 1200;
+            } else if (selectedSlab === "custom") {
+                // 직접 입력(잔재) 치수 파싱
+                slabW = parseInt(document.getElementById('custom_slab_w').value) || 0;
+                slabH = parseInt(document.getElementById('custom_slab_h').value) || 0;
             }
+            
             const slabArea = (slabW * slabH) / 1000000;
-
             const lossRate = parseInt(document.getElementById('input_loss_rate').value) || 60;
             document.getElementById('loss_percent').textContent = lossRate;
 
@@ -257,7 +297,7 @@
             }
 
             let neededSlabs = 0;
-            if (dataCut.area > 0) {
+            if (dataCut.area > 0 && slabArea > 0) {
                 neededSlabs = Math.ceil(dataCut.area / (slabArea * (lossRate / 100)));
             }
             document.getElementById('total_slabs').textContent = neededSlabs;
@@ -273,12 +313,21 @@
         }
 
         function saveItemToLeft() {
-            const itemName = document.getElementById('item_name').value.trim() || "미지정 자재";
+            const thickness = document.getElementById('item_thickness').value;
+            const rawName = document.getElementById('item_name').value.trim() || "미지정 자재";
+            const itemName = `[${thickness}] ${rawName}`; // 두께를 이름 앞에 결합
+            
             const slabs = parseInt(document.getElementById('total_slabs').textContent) || 0;
             const cutLen = parseFloat(document.getElementById('res_cut').textContent) || 0;
+            
             const selectedSlab = document.getElementById('slab_size').value;
+            let slabDisplaySize = selectedSlab;
+            if (selectedSlab === 'custom') {
+                const cw = document.getElementById('custom_slab_w').value || '0';
+                const ch = document.getElementById('custom_slab_h').value || '0';
+                slabDisplaySize = `잔재 (${cw}*${ch})`;
+            }
 
-            // 입력된 재단 치수 목록 추출 (1번 요구사항 반영)
             const dataCut = calculateCuttingAreaAndLength(document.getElementById('input_cut').value);
             const cutDetails = dataCut.details;
 
@@ -302,14 +351,13 @@
                 return;
             }
 
-            // 배열에 새로운 객체 추가 (누적 데이터 유실 버그 수정 해결책)
             globalSavedItems.push({
                 id: Date.now(),
                 name: itemName,
-                slabSize: selectedSlab,
+                slabSize: slabDisplaySize,
                 slabs: slabs,
                 cutLen: cutLen,
-                cutDetails: cutDetails, // 치수 상세 배열 저장
+                cutDetails: cutDetails,
                 procs: activeProcsData
             });
 
@@ -319,8 +367,6 @@
 
         function updateLeftListUI() {
             const listEl = document.getElementById('saved_list');
-            
-            // 기존 비어있음 메시지 처리용 요소 선택
             const emptyEl = document.getElementById('empty_msg');
 
             if (globalSavedItems.length === 0) {
@@ -333,7 +379,7 @@
             }
 
             if(emptyEl) emptyEl.style.display = 'none';
-            listEl.innerHTML = ''; // 덮어쓰지 않고 배열 전체 기반 재렌더링
+            listEl.innerHTML = '';
 
             let totalSlabs = 0, totalCut = 0;
 
@@ -342,8 +388,6 @@
                 totalCut += item.cutLen;
 
                 let procLines = item.procs.map(p => `<div>• ${p.name}: <span class="font-bold text-slate-700">${p.val}</span></div>`).join('');
-                
-                // 가로x세로 입력 치수를 시각적으로 노출 (1번 기획 반영)
                 let detailsLine = item.cutDetails.length > 0 
                     ? `<div class="col-span-2 text-[11px] bg-slate-100 p-1.5 rounded mt-1 text-blue-800 break-words font-sans">📐 입력 치수: ${item.cutDetails.join(', ')}</div>` 
                     : '';
@@ -354,12 +398,12 @@
                     <div class="flex justify-between items-start font-bold text-sm text-slate-800">
                         <div class="flex flex-col">
                             <span>📌 ${item.name}</span>
-                            <span class="text-[10px] text-gray-400 font-normal">원판 규격: ${item.slabSize}</span>
+                            <span class="text-[10px] text-gray-400 font-normal">사용 자재: ${item.slabSize}</span>
                         </div>
                         <button onclick="deleteItem(${item.id})" class="text-red-500 font-normal text-xs hover:underline pt-0.5">삭제</button>
                     </div>
                     <div class="text-gray-600 grid grid-cols-2 gap-x-2 gap-y-0.5 font-mono pt-1">
-                        <div>• 원판수량: <span class="text-blue-600 font-bold">${item.slabs}</span> 장</div>
+                        <div>• 소요수량: <span class="text-blue-600 font-bold">${item.slabs}</span> 장</div>
                         <div>• 재단길이: <span class="text-slate-700 font-bold">${item.cutLen}</span> m</div>
                         ${procLines}
                         ${detailsLine}
@@ -377,7 +421,6 @@
             updateLeftListUI();
         }
 
-        // 전체 내역 초기화 기능 (2번 요구사항 확인 절차 반영)
         function clearAllRecords() {
             if(globalSavedItems.length === 0) {
                 alert("초기화할 기록이 없습니다.");
@@ -391,9 +434,14 @@
         }
 
         function resetCurrentForm() {
+            document.getElementById('item_thickness').value = '12T';
             document.getElementById('item_name').value = '';
             document.getElementById('input_cut').value = '';
             document.getElementById('input_loss_rate').value = 60;
+            document.getElementById('slab_size').value = '3200*1600';
+            document.getElementById('custom_slab_w').value = '';
+            document.getElementById('custom_slab_h').value = '';
+            document.getElementById('custom_slab_inputs').classList.add('hidden');
             activeFields = {};
             renderFields();
             calculateAll();
