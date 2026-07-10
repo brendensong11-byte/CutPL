@@ -11,7 +11,7 @@
     <!-- 큰 틀 구성 -->
     <div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <!-- 📋 [왼쪽] 현장 누적 기록장 및 실시간 도면 구역 (반장님 요청: 도면을 왼쪽으로 이동) -->
+        <!-- 📋 [왼쪽] 현장 누적 기록장 및 실시간 도면 구역 -->
         <div class="lg:col-span-5 space-y-6 flex flex-col h-full">
             
             <!-- 누적 기록장 -->
@@ -41,7 +41,7 @@
                 </div>
             </div>
 
-            <!-- 📊 [이동 완료] 실시간 재단 도면 시각화 구역 -->
+            <!-- 📊 실시간 재단 도면 시각화 구역 -->
             <div class="bg-white p-5 rounded-2xl shadow-xl border border-gray-200/60 space-y-2 flex-1">
                 <span class="text-sm font-bold text-slate-800 tracking-wider block">📊 실시간 재단 도면 레이아웃 (시뮬레이션)</span>
                 <div id="slab_layouts_container" class="space-y-4 pt-1 overflow-y-auto max-h-[600px] pr-1">
@@ -55,7 +55,7 @@
         <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-xl border border-gray-100 space-y-5">
             <div class="border-b border-gray-100 pb-3 text-center">
                 <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">
-                    도면 계산기<span class="text-blue-600 font-bold text-base"> (✨ 반장님 맞춤 하이픈 연장재단 및 자유회전 버전)</span>
+                    도면 계산기<span class="text-blue-600 font-bold text-base"> (✨ 반장님 맞춤 N단 무한 연장재단 및 자유회전 버전)</span>
                 </h1>
             </div>
 
@@ -101,16 +101,16 @@
             <div class="bg-blue-50/70 p-4 rounded-xl border border-blue-100 flex justify-between items-center text-sm">
                 <div class="flex flex-col">
                     <span class="font-bold text-gray-700">🔮 예측 필요 원판(잔재) 수량:</span>
-                    <span class="text-[11px] text-blue-600 font-medium mt-0.5">✨ 하이픈(-) 묶음 유지 및 일반 조각 빈틈 자동회전 시스템 적용</span>
+                    <span class="text-[11px] text-blue-600 font-medium mt-0.5">✨ 하이픈(-) 무한 연속 묶음 유지 및 일반 조각 빈틈 자동회전 시스템 적용</span>
                 </div>
                 <span class="text-base font-black text-blue-700"><span id="total_slabs">0</span> 장</span>
             </div>
 
             <div>
                 <label class="block text-sm font-bold text-gray-700 mb-1">재단 치수 입력 (가로 세로 순서대로)</label>
-                <textarea id="input_cut" class="w-full p-3 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50" rows="8" placeholder="치수를 입력하세요! (예: 2450 915)&#10;1980 943&#10;2081 650&#10;910 650 - 910 290&#10;1750 700" oninput="calculateAll()"></textarea>
+                <textarea id="input_cut" class="w-full p-3 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50" rows="8" placeholder="치수를 입력하세요! (예: 2450 915)&#10;1980 943&#10;2081 650&#10;400 600 - 400 1300 - 400 600 - 400 600&#10;1750 700" oninput="calculateAll()"></textarea>
                 <div class="flex justify-between items-center mt-1">
-                    <span class="text-[11px] text-amber-600 font-medium">💡 일반 조각은 빈틈에 맞춰 자동 회전하며, 하이픈(-)으로 연결된 조각은 연속 재단 조각으로 묶입니다.</span>
+                    <span class="text-[11px] text-amber-600 font-medium">💡 일반 조각은 빈틈에 맞춰 자동 회전하며, 하이픈(-)으로 여러 개 연결된 조각은 일렬 연장재단 조각으로 묶입니다.</span>
                     <div class="text-xs text-gray-500">현재 품목 재단 총 길이 (4면 완재단 기준): <span id="res_cut" class="font-bold text-blue-600">0</span> m</div>
                 </div>
             </div>
@@ -181,7 +181,7 @@
             return (sumMm / 1000).toFixed(2);
         }
 
-        // 반장님 맞춤형 데이터 파싱 로직 (하이픈 인식 기능)
+        // 🛠️ 반장님 수정 요청 반영: 하이픈(-) 무한 연속 연결(N단 결합) 파싱 로직
         function parseCutPieces(text) {
             let pieces = [];
             let totalLengthM = 0;
@@ -195,36 +195,58 @@
                 if(!trimmed) return;
                 
                 if (trimmed.includes('-')) {
-                    // 하이픈이 들어간 이어서 재단할 세트 처리
-                    const parts = trimmed.split('-').map(p => p.match(/\d+/g));
-                    if (parts.length >= 2 && parts[0] && parts[1]) {
-                        const w1 = parseInt(parts[0][0]), h1 = parseInt(parts[0][1]);
-                        const w2 = parseInt(parts[1][0]), h2 = parseInt(parts[1][1]);
-                        
-                        if (w1 && h1 && w2 && h2) {
-                            if (w1 === w2) {
-                                // 가로가 같으면 세로로 묶기
-                                pieces.push({
-                                    w: w1, h: h1 + h2, origW: w1, origH: h1 + h2,
-                                    canRotate: false, isGroup: true, label: `${w1}×${h1}🔗${w2}×${h2}`
-                                });
-                            } else if (h1 === h2) {
-                                // 세로가 같으면 가로로 묶기
-                                pieces.push({
-                                    w: w1 + w2, h: h1, origW: w1 + w2, origH: h1,
-                                    canRotate: false, isGroup: true, label: `${w1}×${h1}🔗${w2}×${h2}`
-                                });
-                            } else {
-                                // 규격이 다르면 안전하게 개별 처리
-                                pieces.push({ w: w1, h: h1, origW: w1, origH: h1, canRotate: true, label: `${w1}×${h1}` });
-                                pieces.push({ w: w2, h: h2, origW: w2, origH: h2, canRotate: true, label: `${w2}×${h2}` });
-                            }
-                            totalLengthM += (((w1 + h1) * 2) + ((w2 + h2) * 2)) / 1000;
-                            cutDetails.push(`${w1}×${h1}-${w2}×${h2}`);
+                    // 하이픈으로 쪼개진 모든 파트 배열화
+                    const rawParts = trimmed.split('-');
+                    let validSubPieces = [];
+
+                    rawParts.forEach(part => {
+                        const match = part.match(/\d+/g);
+                        if (match && match.length >= 2) {
+                            validSubPieces.push({ w: parseInt(match[0]), h: parseInt(match[1]) });
                         }
+                    });
+
+                    if (validSubPieces.length > 0) {
+                        // 1. 모든 서브 조각들이 가로 방향으로 일치하는지 검사 (폭이 같은 경우)
+                        const allSameW = validSubPieces.every(p => p.w === validSubPieces[0].w);
+                        // 2. 모든 서브 조각들이 세로 방향으로 일치하는지 검사 (높이가 같은 경우)
+                        const allSameH = validSubPieces.every(p => p.h === validSubPieces[0].h);
+
+                        if (allSameW && validSubPieces.length > 1) {
+                            // 가로가 같으면 세로(높이)를 누적 합산하여 하나의 긴 조각으로 결합
+                            const finalW = validSubPieces[0].w;
+                            const finalH = validSubPieces.reduce((sum, p) => sum + p.h, 0);
+                            const labelStr = validSubPieces.map(p => `${p.w}×${p.h}`).join('🔗');
+                            
+                            pieces.push({
+                                w: finalW, h: finalH, origW: finalW, origH: finalH,
+                                canRotate: false, isGroup: true, label: labelStr
+                            });
+                        } else if (allSameH && validSubPieces.length > 1) {
+                            // 세로가 같으면 가로(길이)를 누적 합산하여 하나의 긴 조각으로 결합
+                            const finalW = validSubPieces.reduce((sum, p) => sum + p.w, 0);
+                            const finalH = validSubPieces[0].h;
+                            const labelStr = validSubPieces.map(p => `${p.w}×${p.h}`).join('🔗');
+                            
+                            pieces.push({
+                                w: finalW, h: finalH, origW: finalW, origH: finalH,
+                                canRotate: false, isGroup: true, label: labelStr
+                            });
+                        } else {
+                            // 방향 정렬이 일치하지 않는 예외적인 경우 개별 조각으로 해체 안전 처리
+                            validSubPieces.forEach(p => {
+                                pieces.push({ w: p.w, h: p.h, origW: p.w, origH: p.h, canRotate: true, label: `${p.w}×${p.h}` });
+                            });
+                        }
+
+                        // 전체 4면 완재단 길이 환산 누적
+                        validSubPieces.forEach(p => {
+                            totalLengthM += ((p.w + p.h) * 2) / 1000;
+                        });
+                        cutDetails.push(validSubPieces.map(p => `${p.w}×${p.h}`).join('-'));
                     }
                 } else {
-                    // 일반 조각 처리
+                    // 일반 단독 조각 처리
                     const parts = trimmed.match(/\d+/g);
                     if (parts && parts.length >= 2) {
                         const w = parseInt(parts[0]);
@@ -296,7 +318,6 @@
             }
         }
 
-        // 최적화 연산 및 도면 렌더링 함수
         function calculateAll() {
             const dataCut = parseCutPieces(document.getElementById('input_cut').value);
             document.getElementById('res_cut').textContent = dataCut.length;
@@ -319,13 +340,11 @@
             let slabs = [];
 
             if (dataCut.pieces.length > 0 && slabW > 0 && slabH > 0) {
-                // 면적이 큰 덩어리 순서대로 우선 배치 정렬
                 let sortedPieces = [...dataCut.pieces].sort((a, b) => (b.w * b.h) - (a.w * a.h));
 
                 sortedPieces.forEach(piece => {
                     let placed = false;
 
-                    // 1단계: 기존 원판들에 정방향 혹은 회전해서 들어갈 자리가 있는지 체크
                     for (let i = 0; i < slabs.length; i++) {
                         if (tryPlaceMaxRects(slabs[i], piece)) {
                             placed = true;
@@ -333,7 +352,6 @@
                         }
                     }
 
-                    // 2단계: 못 들어갔다면 새 원판을 열고 안착
                     if (!placed) {
                         let newSlab = {
                             width: slabW,
@@ -344,17 +362,15 @@
                         if (tryPlaceMaxRects(newSlab, piece)) {
                             slabs.push(newSlab);
                         } else {
-                            // 원판보다 무지막지하게 큰 조각 구제용 처리
                             newSlab.placedPieces.push({ 
                                 x: 0, y: 0, w: piece.w, h: piece.h, 
-                                origW: piece.origW, origH: piece.origH, isOver: true, label: piece.label, rotated: false 
+                                origW: piece.origW, origH: piece.origH, isOver: true, label: piece.label, rotated: false, isGroup: piece.isGroup 
                             });
                             slabs.push(newSlab);
                         }
                     }
                 });
 
-                // 3단계: 취합된 슬랩 데이터를 왼쪽 화면에 그려주기
                 slabs.forEach((slab, index) => {
                     const slabDiv = document.createElement('div');
                     slabDiv.className = "bg-white p-3 rounded-xl border border-slate-300 shadow-sm space-y-1.5";
@@ -376,7 +392,6 @@
                         const widthPct = (p.w / slab.width) * 100;
                         const heightPct = (p.h / slab.height) * 100;
 
-                        // 하이픈 연결 묶음은 오렌지색, 일반 회전 조각은 푸른색 계열로 구별 시각화
                         let bgClass = p.isGroup ? 'bg-amber-600 text-white' : 'bg-blue-600/90 text-white';
                         if (p.isOver) bgClass = 'bg-red-500 text-white';
 
@@ -386,10 +401,9 @@
                         box.style.width = `${widthPct}%`;
                         box.style.height = `${heightPct}%`;
                         
-                        // 돌려서 들어간 조각이면 (회전) 표시 제공
                         let rotBadge = p.rotated ? '<span class="text-[8px] bg-black/30 px-1 rounded mt-0.5">🔄 회전됨</span>' : '';
                         box.innerHTML = `
-                            <span class="font-bold tracking-tighter text-[9px] leading-tight break-all">${p.label}</span>
+                            <span class="font-bold tracking-tighter text-[9px] leading-tight break-all px-0.5">${p.label}</span>
                             ${rotBadge}
                         `;
                         viewWrapper.appendChild(box);
@@ -414,11 +428,9 @@
             }
         }
 
-        // 반장님 맞춤형 공간분할 배치 코어 (자유 회전 기능 내장)
         function tryPlaceMaxRects(slab, piece) {
             let spaces = slab.spaces;
             
-            // 1차 시도: 정방향(원본 상태)으로 집어넣어 보기
             for (let i = 0; i < spaces.length; i++) {
                 let space = spaces[i];
                 if (piece.w <= space.w && piece.h <= space.h) {
@@ -432,11 +444,9 @@
                 }
             }
 
-            // 2차 시도: 회전이 가능한 일반 조각에 한해 90도 돌려서 욱여넣기
             if (piece.canRotate) {
                 for (let i = 0; i < spaces.length; i++) {
                     let space = spaces[i];
-                    // 가로세로 규격을 뒤집어서(`piece.h`, `piece.w`) 여백과 대조
                     if (piece.h <= space.w && piece.w <= space.h) {
                         spaces.splice(i, 1);
                         slab.placedPieces.push({
@@ -451,7 +461,6 @@
             return false;
         }
 
-        // 사각형 안착 후 남은 여백 쪼개기 시스템
         function splitRemainingSpace(spaces, space, placedW, placedH) {
             let remainW = space.w - placedW;
             let remainH = space.h - placedH;
