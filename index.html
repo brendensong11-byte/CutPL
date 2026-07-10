@@ -3,425 +3,612 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CutPL - 세라믹 도면 통합 계산기 (최적화 버전)</title>
-    <style>
-        :root {
-            --primary-color: #0052cc;
-            --bg-color: #f4f6fa;
-            --card-bg: #ffffff;
-            --text-color: #333333;
-            --border-color: #e0e4ec;
-        }
-
-        body {
-            font-family: 'Noto Sans KR', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 24px;
-        }
-
-        @media (max-width: 1024px) {
-            .container { grid-template-columns: 1fr; }
-        }
-
-        .card {
-            background: var(--card-bg);
-            border-radius: 12px;
-            padding: 24px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border: 1px solid var(--border-color);
-        }
-
-        h2 { margin-top: 0; font-size: 1.4rem; color: #111; display: flex; align-items: center; gap: 8px; }
-        
-        .grid-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-            margin-bottom: 16px;
-        }
-
-        .form-group { margin-bottom: 16px; }
-        .form-group.full { grid-column: span 2; }
-        
-        label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 0.9rem; color: #555; }
-        
-        select, input, textarea {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid #ccd2e0;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 0.95rem;
-            transition: border-color 0.2s;
-        }
-        select:focus, input:focus, textarea:focus {
-            border-color: var(--primary-color);
-            outline: none;
-        }
-        
-        textarea { height: 120px; font-family: monospace; resize: vertical; }
-
-        /* 고스라 / 배면 등 세라믹 옵션 스타일 */
-        .option-group {
-            background: #f8fafc;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            margin-bottom: 16px;
-        }
-        .option-title { font-weight: bold; font-size: 0.95rem; margin-bottom: 12px; color: #334155; }
-        .checkbox-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-        }
-        .checkbox-label {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.85rem;
-            cursor: pointer;
-        }
-        .checkbox-label input { width: auto; margin: 0; }
-
-        .btn {
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 14px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            width: 100%;
-            font-size: 1rem;
-            box-shadow: 0 2px 4px rgba(0,82,204,0.2);
-        }
-        .btn:hover { background-color: #0040a3; }
-
-        .info-box {
-            background-color: #eff6ff;
-            border-left: 4px solid #3b82f6;
-            padding: 12px 16px;
-            border-radius: 4px;
-            margin-bottom: 16px;
-            font-size: 0.88rem;
-            line-height: 1.5;
-            color: #1e40af;
-        }
-
-        /* 캔버스 및 결과 영역 */
-        .canvas-container {
-            width: 100%;
-            background: #fff;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            display: flex;
-            justify-content: center;
-            padding: 16px 0;
-            margin-bottom: 20px;
-        }
-        canvas { background-color: #ffffff; }
-
-        .result-list {
-            margin-top: 16px;
-            border-top: 1px solid var(--border-color);
-            padding-top: 16px;
-        }
-        .result-item {
-            padding: 10px;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 0.9rem;
-            display: flex;
-            justify-content: space-between;
-        }
-    </style>
+    <title>CutPL - 세라믹 도면 통합 계산기</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
+<body class="bg-slate-100 text-gray-800 min-h-screen py-8 px-4 flex justify-center items-start">
 
-<div class="container">
-    <!-- 왼쪽: 기존 CutPL 입력 및 상세 세라믹 설정 영역 -->
-    <div class="card">
-        <h2>📐 CutPL 세라믹 도면 통합 계산기</h2>
+    <!-- 큰 틀 구성 -->
+    <div class="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        <div class="grid-inputs">
-            <div class="form-group">
-                <label>원자재 규격 선택</label>
-                <select id="plateSize">
-                    <option value="3200x1600">기본 원판 (3200 × 1600)</option>
-                    <option value="3600x1600">대형 원판 (3600 × 1600)</option>
-                    <option value="2400x1200">중형 원판 (2400 × 1200)</option>
-                </select>
+        <!-- 📋 [왼쪽] 현장 누적 기록장 및 실시간 도면 구역 -->
+        <div class="lg:col-span-5 space-y-6 flex flex-col h-full">
+            
+            <!-- 누적 기록장 -->
+            <div class="bg-white p-5 rounded-2xl shadow-xl border border-gray-200/60 flex flex-col min-h-[350px]">
+                <div class="border-b pb-3 mb-4 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 flex items-center gap-1">
+                            📋 현장 누적 기록장 <span class="text-xs font-normal text-gray-400">(여러 자재 합산)</span>
+                        </h2>
+                        <p class="text-[11px] text-gray-400 mt-0.5">우측에서 입력 후 '품목 저장하기'를 누르면 여기에 쌓입니다.</p>
+                    </div>
+                    <button onclick="clearAllRecords()" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs px-2.5 py-1.5 rounded-lg font-bold transition-all border border-red-200">
+                        🧹 전체 초기화
+                    </button>
+                </div>
+
+                <div id="saved_list" class="space-y-3 flex-1 overflow-y-auto max-h-[250px] pr-1">
+                    <p id="empty_msg" class="text-sm text-gray-400 text-center py-12">저장된 품목이 없습니다.<br>우측에서 계산 후 저장해 주세요.</p>
+                </div>
+
+                <div class="mt-4 pt-4 border-t border-gray-200 bg-slate-900 text-white p-4 rounded-xl space-y-1 shadow-inner">
+                    <span class="text-xs font-bold text-amber-400 uppercase tracking-wider block">🏢 현장 총 합계 (누적)</span>
+                    <div class="grid grid-cols-2 gap-y-1 text-sm text-gray-200 pt-1">
+                        <div>총 원판(슬랩): <span id="grand_slabs" class="font-bold text-white text-base">0</span> 장</div>
+                        <div>총 재단 길이: <span id="grand_length" class="font-bold text-white text-base">0</span> m</div>
+                    </div>
+                </div>
             </div>
-            <div class="form-group">
-                <label>칼날 두께 (Loss, mm)</label>
-                <input type="number" id="bladeLoss" value="3" min="0" max="10">
+
+            <!-- 📊 실시간 재단 도면 시각화 구역 -->
+            <div class="bg-white p-5 rounded-2xl shadow-xl border border-gray-200/60 space-y-2 flex-1">
+                <span class="text-sm font-bold text-slate-800 tracking-wider block">📊 실시간 재단 도면 레이아웃 (시뮬레이션)</span>
+                <div id="slab_layouts_container" class="space-y-4 pt-1 overflow-y-auto max-h-[600px] pr-1">
+                    <p class="text-xs text-gray-400 text-center py-4">치수를 입력하면 여기에 원판 도면 그림이 생성됩니다.</p>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ✍️ [오른쪽] 세라믹 계산 및 입력창 -->
+        <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-xl border border-gray-100 space-y-5">
+            <div class="border-b border-gray-100 pb-3 text-center">
+                <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">
+                    도면 계산기<span class="text-blue-600 font-bold text-base"> (✨ 반장님 맞춤 N단 무한 연장재단 및 자유회전 버전)</span>
+                </h1>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-3">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 mb-1">두께(T) 선택</label>
+                        <select id="item_thickness" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="12T">12T (기본)</option>
+                            <option value="6T">6T</option>
+                            <option value="20T">20T</option>
+                        </select>
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label class="block text-xs font-bold text-gray-600 mb-1">자재명 (구분용)</label>
+                        <input type="text" id="item_name" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="예: 화이트 스톰, 비앙코">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 mb-1">사용할 원자재 규격</label>
+                    <select id="slab_size" class="w-full p-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="toggleCustomSlabSize()">
+                        <option value="3200*1600">기본 원판 (3200 * 1600)</option>
+                        <option value="3600*1600">큰 원판 (3600 * 1600)</option>
+                        <option value="2700*1200">중간 규격 (2700 * 1200)</option>
+                        <option value="custom">📋 잔재 / 자투리 규격 직접 입력</option>
+                    </select>
+                </div>
+
+                <div id="custom_slab_inputs" class="hidden grid grid-cols-2 gap-3 bg-amber-50/50 p-2.5 rounded-lg border border-amber-200">
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-0.5">잔재 가로(긴 방향 mm)</label>
+                        <input type="number" id="custom_slab_w" class="w-full p-1.5 bg-white border border-gray-200 rounded text-xs focus:outline-none" placeholder="예: 2000" oninput="calculateAll()">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-0.5">잔재 세로(폭 mm)</label>
+                        <input type="number" id="custom_slab_h" class="w-full p-1.5 bg-white border border-gray-200 rounded text-xs focus:outline-none" placeholder="예: 1600" oninput="calculateAll()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 🔮 예측 필요 수량창 -->
+            <div class="bg-blue-50/70 p-4 rounded-xl border border-blue-100 flex justify-between items-center text-sm">
+                <div class="flex flex-col">
+                    <span class="font-bold text-gray-700">🔮 예측 필요 원판(잔재) 수량:</span>
+                    <span class="text-[11px] text-blue-600 font-medium mt-0.5">✨ 하이픈(-) 무한 연속 묶음 유지 및 일반 조각 빈틈 자동회전 시스템 적용</span>
+                </div>
+                <span class="text-base font-black text-blue-700"><span id="total_slabs">0</span> 장</span>
+            </div>
+
+            <div>
+                <label class="block text-sm font-bold text-gray-700 mb-1">재단 치수 입력 (가로 세로 순서대로)</label>
+                <textarea id="input_cut" class="w-full p-3 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50" rows="8" placeholder="치수를 입력하세요! (예: 2450 915)&#10;1980 943&#10;2081 650&#10;400 600 - 400 1300 - 400 600 - 400 600&#10;1750 700" oninput="calculateAll()"></textarea>
+                <div class="flex justify-between items-center mt-1">
+                    <span class="text-[11px] text-amber-600 font-medium">💡 일반 조각은 빈틈에 맞춰 자동 회전하며, 하이픈(-)으로 여러 개 연결된 조각은 일렬 연장재단 조각으로 묶입니다.</span>
+                    <div class="text-xs text-gray-500">현재 품목 재단 총 길이 (4면 완재단 기준): <span id="res_cut" class="font-bold text-blue-600">0</span> m</div>
+                </div>
+            </div>
+
+            <!-- 가공 섹션 -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200/60 space-y-4">
+                <div class="flex justify-between items-center border-b pb-2 border-slate-200">
+                    <span class="text-xs font-bold text-slate-700 tracking-wider flex items-center gap-1">🛠️ 가공 및 타공 선택 입력</span>
+                    <div class="flex gap-1">
+                        <select id="select_process_type" class="p-1 text-xs bg-white border border-gray-300 rounded focus:outline-none">
+                            <option value="jolly">뒷도매(졸리) 〇〇 (치수 입력)</option>
+                            <option value="gosra">고스라 🔺 (치수 입력)</option>
+                            <option value="back">배면연마 //// (치수 입력)</option>
+                            <option value="basin">세면대타공 (개수)</option>
+                            <option value="sink">싱크타공 (개수)</option>
+                            <option value="water">수전타공 (개수)</option>
+                            <option value="induction">인덕션타공 (개수)</option>
+                            <option value="outlet">콘센트타공 (개수)</option>
+                            <option value="saseon">사선절개 (개수)</option>
+                            <option value="ttanaegi">따내기 (개수)</option>
+                        </select>
+                        <button onclick="addProcessField()" class="bg-slate-800 text-white text-xs px-2.5 py-1 rounded font-bold hover:bg-slate-900">+ 추가</button>
+                    </div>
+                </div>
+                <div id="dynamic_process_container" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+                <button onclick="resetCurrentForm()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs py-3 rounded-xl font-bold transition-all">이 칸 비우기</button>
+                <button onclick="saveItemToLeft()" class="col-span-2 bg-blue-600 hover:bg-blue-700 text-white text-xs py-3 rounded-xl font-bold transition-all shadow-md shadow-blue-200">← 위 내용을 왼쪽에 저장하기</button>
             </div>
         </div>
-
-        <!-- 기존 핵심 기능: 고스라 및 가공 옵션 -->
-        <div class="option-group">
-            <div class="option-title">✨ 세라믹 가공 및 제자리 규격 설정</div>
-            <div class="checkbox-grid">
-                <label class="checkbox-label"><input type="checkbox" id="optGosura" checked> 고스라 매칭</label>
-                <label class="checkbox-label"><input type="checkbox" id="optBaemyeon" checked> 배면 가공 감안</label>
-                <label class="checkbox-label"><input type="checkbox" id="optJeajari" checked> 제자리 길이 유지</label>
-                <label class="checkbox-label"><input type="checkbox" id="optLineCut" checked> 연속 라인 커팅</label>
-                <label class="checkbox-label"><input type="checkbox" id="optEdgeTrim"> 사방 테두리 트리밍</label>
-            </div>
-        </div>
-
-        <div class="info-box">
-            💡 <strong>자동 정렬 정밀 매칭:</strong> 가로/세로를 뒤바꿔 무작위로 입력(`600 400` 또는 `400 600`)하더라도, 연속 라인 재단 효율성에 맞춰 시스템이 <strong>스스로 이쁘게 회전하여 원판 안에 정렬</strong>합니다.
-        </div>
-
-        <div class="form-group full">
-            <label>재단 치수 목록 입력 (가로 세로 또는 수량 자유 입력)</label>
-            <textarea id="cutInputs" placeholder="예시 입력:&#10;600 400 - 1300 400 - 400 600&#10;600 450 - 500 450 - 600 450"></textarea>
-        </div>
-
-        <button class="btn" onclick="processCutting()">도면 계산 및 시뮬레이션 가동</button>
     </div>
 
-    <!-- 오른쪽: 실시간 도면 레이아웃 시뮬레이션 및 결과 리스트 -->
-    <div class="card">
-        <h2>📊 실시간 도면 레이아웃 시뮬</h3>
-        <div id="summaryText" style="margin-bottom:12px; font-weight:bold; color:#475569; font-size:0.95rem;"></div>
-        
-        <div class="canvas-container">
-            <canvas id="layoutCanvas" width="600" height="350"></canvas>
-        </div>
+    <script>
+        let globalSavedItems = [];
+        let activeFields = {};
 
-        <div class="result-list">
-            <h3 style="font-size:1rem; margin-bottom:10px;">📋 상세 재단 배치 내역</h3>
-            <div id="resultItems">
-                <!-- 결과 아이템 동적 생성 생성 -->
-            </div>
-        </div>
-    </div>
-</div>
+        const processMaster = {
+            jolly: { name: '뒷도매(졸리) 〇〇', type: 'text', placeholder: '도면 치수 입력', unit: 'm' },
+            gosra: { name: '고스라 🔺', type: 'text', placeholder: '예: 2450+1200', unit: 'm' },
+            back: { name: '배면연마 ////', type: 'text', placeholder: '예: 1800+600', unit: 'm' },
+            basin: { name: '세면대타공', type: 'number', placeholder: '0', unit: '개' },
+            sink: { name: '싱크타공', type: 'number', placeholder: '0', unit: '개' },
+            water: { name: '수전타공', type: 'number', placeholder: '0', unit: '개' },
+            induction: { name: '인덕션타공', type: 'number', placeholder: '0', unit: '개' },
+            outlet: { name: '콘센트타공', type: 'number', placeholder: '0', unit: '개' },
+            saseon: { name: '사선절개', type: 'number', placeholder: '0', unit: '개' },
+            ttanaegi: { name: '따내기', type: 'number', placeholder: '0', unit: '개' }
+        };
 
-<script>
-    // 초기 로드 시 기존 테스트용 세라믹 입력 데이터 채우기
-    window.onload = function() {
-        document.getElementById('cutInputs').value = "600 400 - 1300 400 - 400 600\n600 450 - 500 450 - 600 450";
-        processCutting();
-    };
-
-    function processCutting() {
-        // 1. 기본 원판 규격 및 칼날 loss 파싱
-        const plateSelect = document.getElementById('plateSize').value;
-        const [plateW, plateH] = plateSelect.split('x').map(Number);
-        const loss = parseInt(document.getElementById('bladeLoss').value) || 0;
-
-        // 2. 가공 옵션 상태 체크 (추후 알고리즘 확장성 보존)
-        const useGosura = document.getElementById('optGosura').checked;
-        const useBaemyeon = document.getElementById('optBaemyeon').checked;
-        const useJeajari = document.getElementById('optJeajari').checked;
-
-        // 3. 입력 데이터 정규식 추출
-        const rawText = document.getElementById('cutInputs').value;
-        const regex = /(\d+)\s+(\d+)/g;
-        let match;
-        let rawItems = [];
-
-        while ((match = regex.exec(rawText)) !== null) {
-            rawItems.push({
-                w: parseInt(match[1]),
-                h: parseInt(match[2]),
-                originalW: parseInt(match[1]),
-                originalH: parseInt(match[2])
-            });
+        function toggleCustomSlabSize() {
+            const select = document.getElementById('slab_size').value;
+            const customDiv = document.getElementById('custom_slab_inputs');
+            if (select === 'custom') {
+                customDiv.classList.remove('hidden');
+            } else {
+                customDiv.classList.add('hidden');
+            }
+            calculateAll();
         }
 
-        if (rawItems.length === 0) {
-            alert("올바른 재단 치수를 입력해주세요. (예: 600 400)");
-            return;
+        function parseAndSumToMeters(text) {
+            if (!text) return 0;
+            const numbers = text.match(/\d+/g);
+            if (!numbers) return 0;
+            const sumMm = numbers.reduce((acc, num) => acc + parseInt(num), 0);
+            return (sumMm / 1000).toFixed(2);
         }
 
-        // 4. [수정부분 2] 가로세로 자동 나열 및 빈틈 밀착 테트리스 알고리즘 작동
-        const placedItems = fitItemsLayout(rawItems, plateW, plateH, loss);
+        // 🛠️ 반장님 수정 요청 반영: 하이픈(-) 무한 연속 연결(N단 결합) 파싱 로직
+        function parseCutPieces(text) {
+            let pieces = [];
+            let totalLengthM = 0;
+            let cutDetails = [];
 
-        // 5. [수정부분 1] 원판 외곽선 안쪽에 재단면 매칭 드로잉
-        drawSimulation(placedItems, plateW, plateH);
+            if (!text) return { pieces, length: 0, details: [] };
+            
+            const lines = text.split(/[\n;]+/);
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if(!trimmed) return;
+                
+                if (trimmed.includes('-')) {
+                    // 하이픈으로 쪼개진 모든 파트 배열화
+                    const rawParts = trimmed.split('-');
+                    let validSubPieces = [];
 
-        // 6. 상세 결과 리스트 UI 업데이트
-        updateResultUI(placedItems, rawItems.length, plateW, plateH);
-    }
+                    rawParts.forEach(part => {
+                        const match = part.match(/\d+/g);
+                        if (match && match.length >= 2) {
+                            validSubPieces.push({ w: parseInt(match[0]), h: parseInt(match[1]) });
+                        }
+                    });
 
-    /**
-     * [수정부분 2 로직] 가로세로 입력 순서에 구애받지 않고 알아서 이쁘게 방향 돌려 맞추는 배치 알고리즘
-     */
-    function fitItemsLayout(rawItems, plateWidth, plateHeight, loss) {
-        let placedItems = [];
-        // 원판 공간 초기화
-        let spaces = [{ x: 0, y: 0, w: plateWidth, h: plateHeight }];
+                    if (validSubPieces.length > 0) {
+                        // 1. 모든 서브 조각들이 가로 방향으로 일치하는지 검사 (폭이 같은 경우)
+                        const allSameW = validSubPieces.every(p => p.w === validSubPieces[0].w);
+                        // 2. 모든 서브 조각들이 세로 방향으로 일치하는지 검사 (높이가 같은 경우)
+                        const allSameH = validSubPieces.every(p => p.h === validSubPieces[0].h);
 
-        // 면적이 큰 조각 우선순위 정렬 (연속 재단 라인 가시성 확보)
-        const sortedItems = [...rawItems].sort((a, b) => (b.w * b.h) - (a.w * a.h));
+                        if (allSameW && validSubPieces.length > 1) {
+                            // 가로가 같으면 세로(높이)를 누적 합산하여 하나의 긴 조각으로 결합
+                            const finalW = validSubPieces[0].w;
+                            const finalH = validSubPieces.reduce((sum, p) => sum + p.h, 0);
+                            const labelStr = validSubPieces.map(p => `${p.w}×${p.h}`).join('🔗');
+                            
+                            pieces.push({
+                                w: finalW, h: finalH, origW: finalW, origH: finalH,
+                                canRotate: false, isGroup: true, label: labelStr
+                            });
+                        } else if (allSameH && validSubPieces.length > 1) {
+                            // 세로가 같으면 가로(길이)를 누적 합산하여 하나의 긴 조각으로 결합
+                            const finalW = validSubPieces.reduce((sum, p) => sum + p.w, 0);
+                            const finalH = validSubPieces[0].h;
+                            const labelStr = validSubPieces.map(p => `${p.w}×${p.h}`).join('🔗');
+                            
+                            pieces.push({
+                                w: finalW, h: finalH, origW: finalW, origH: finalH,
+                                canRotate: false, isGroup: true, label: labelStr
+                            });
+                        } else {
+                            // 방향 정렬이 일치하지 않는 예외적인 경우 개별 조각으로 해체 안전 처리
+                            validSubPieces.forEach(p => {
+                                pieces.push({ w: p.w, h: p.h, origW: p.w, origH: p.h, canRotate: true, label: `${p.w}×${p.h}` });
+                            });
+                        }
 
-        for (let item of sortedItems) {
-            let placed = false;
-
-            for (let i = 0; i < spaces.length; i++) {
-                let space = spaces[i];
-
-                // 사용자가 가로, 세로 어떻게 넣었든 상관없이 둘 다 시뮬레이션 후보군에 등록
-                let orientations = [
-                    { w: item.w, h: item.h, rotated: false },
-                    { w: item.h, h: item.w, rotated: true }
-                ];
-
-                // 빈 공간 격자 결에 맞춰 가로 연속 컷이 이쁘게 이어지도록 밀착 우선순위 소팅
-                orientations.sort((a, b) => {
-                    let scoreA = Math.abs(space.w - a.w) + Math.abs(space.h - a.h);
-                    let scoreB = Math.abs(space.w - b.w) + Math.abs(space.h - b.h);
-                    return scoreA - scoreB;
-                });
-
-                for (let target of orientations) {
-                    // 칼날 소실 폭(loss)을 계산에 포함하여 공간 비교
-                    if (space.w >= target.w && space.h >= target.h) {
-                        
-                        placedItems.push({
-                            x: space.x,
-                            y: space.y,
-                            w: target.w,
-                            h: target.h,
-                            originalW: item.originalW,
-                            originalH: item.originalH,
-                            rotated: target.rotated
+                        // 전체 4면 완재단 길이 환산 누적
+                        validSubPieces.forEach(p => {
+                            totalLengthM += ((p.w + p.h) * 2) / 1000;
                         });
-
-                        // 컷 분할 및 남은 자투리 영역 추적 (Blade Loss 반영 분할)
-                        if (space.w - target.w - loss > 0) {
-                            spaces.push({
-                                x: space.x + target.w + loss,
-                                y: space.y,
-                                w: space.w - target.w - loss,
-                                h: space.h
-                            });
-                        }
-                        if (space.h - target.h - loss > 0) {
-                            spaces.push({
-                                x: space.x,
-                                y: space.y + target.h + loss,
-                                w: target.w,
-                                h: space.h - target.h - loss
-                            });
-                        }
-
-                        spaces.splice(i, 1);
-                        placed = true;
-                        break;
+                        cutDetails.push(validSubPieces.map(p => `${p.w}×${p.h}`).join('-'));
+                    }
+                } else {
+                    // 일반 단독 조각 처리
+                    const parts = trimmed.match(/\d+/g);
+                    if (parts && parts.length >= 2) {
+                        const w = parseInt(parts[0]);
+                        const h = parseInt(parts[1]);
+                        pieces.push({ w: w, h: h, origW: w, origH: h, canRotate: true, label: `${w}×${h}` });
+                        totalLengthM += ((w + h) * 2) / 1000;
+                        cutDetails.push(`${w}×${h}`);
+                    } else if (parts && parts.length === 1) {
+                        totalLengthM += (parseInt(parts[0]) * 2) / 1000;
+                        cutDetails.push(`${parts[0]}mm`);
                     }
                 }
-                if (placed) break;
+            });
+            return { pieces, length: parseFloat(totalLengthM.toFixed(2)), details: cutDetails };
+        }
+
+        function addProcessField() {
+            const type = document.getElementById('select_process_type').value;
+            if (activeFields[type]) {
+                alert("이미 추가된 항목입니다.");
+                return;
+            }
+            activeFields[type] = true;
+            renderFields();
+        }
+
+        function removeField(type) {
+            delete activeFields[type];
+            renderFields();
+            calculateAll();
+        }
+
+        function renderFields() {
+            const container = document.getElementById('dynamic_process_container');
+            const currentValues = {};
+            
+            for(let key in processMaster) {
+                const el = document.getElementById(`proc_${key}`);
+                if(el) currentValues[key] = el.value;
+            }
+            
+            container.innerHTML = '';
+            
+            for(let key in activeFields) {
+                const meta = processMaster[key];
+                const div = document.createElement('div');
+                div.className = "bg-white p-2.5 rounded-lg border border-gray-200 text-xs space-y-1 relative";
+                
+                let inputHtml = '';
+                if(meta.type === 'text') {
+                    inputHtml = `<input type="text" id="proc_${key}" class="w-full p-1.5 bg-gray-50 border border-gray-200 rounded font-mono text-xs" placeholder="${meta.placeholder}" oninput="calculateAll()">`;
+                } else {
+                    inputHtml = `<input type="number" id="proc_${key}" class="w-full p-1.5 bg-gray-50 border border-gray-200 rounded text-center font-bold" value="0" oninput="calculateAll()">`;
+                }
+                
+                div.innerHTML = `
+                    <div class="flex justify-between items-center font-bold text-gray-700 mb-1">
+                        <span>${meta.name}</span>
+                        <button onclick="removeField('${key}')" class="text-gray-400 hover:text-red-500 font-normal px-1 text-[11px]">✕ 빼기</button>
+                    </div>
+                    ${inputHtml}
+                    <div class="text-[10px] text-right text-gray-400 mt-0.5">${meta.type==='text'?'실시간 합계: <span id="span_calc_'+key+'" class="font-bold text-blue-600">0</span> m':''}</div>
+                `;
+                container.appendChild(div);
+                
+                if(currentValues[key] !== undefined) {
+                    document.getElementById(`proc_${key}`).value = currentValues[key];
+                }
             }
         }
-        return placedItems;
-    }
 
-    /**
-     * [수정부분 1 로직] 3600/3200 × 1600 원판 라인을 그리고 실제 재단면 얹기
-     */
-    function drawSimulation(placedItems, plateW, plateH) {
-        const canvas = document.getElementById('layoutCanvas');
-        const ctx = canvas.getContext('2d');
+        function calculateAll() {
+            const dataCut = parseCutPieces(document.getElementById('input_cut').value);
+            document.getElementById('res_cut').textContent = dataCut.length;
 
-        const margin = 40;
-        const scaleX = (canvas.width - margin * 2) / plateW;
-        const scaleY = (canvas.height - margin * 2) / plateH;
-        const scale = Math.min(scaleX, scaleY);
+            const selectedSlab = document.getElementById('slab_size').value;
+            let slabW = 3200, slabH = 1600;
 
-        const offsetX = (canvas.width - plateW * scale) / 2;
-        const offsetY = (canvas.height - plateH * scale) / 2;
-
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // ──────────────────────────────────────────
-        // 원판 외곽선 시뮬 점선 라인 활성화
-        // ──────────────────────────────────────────
-        ctx.fillStyle = '#f8fafc'; 
-        ctx.fillRect(offsetX, offsetY, plateW * scale, plateH * scale);
-
-        ctx.strokeStyle = '#94a3b8'; // 고급스러운 그레이 외곽선
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]); // 점선 표시
-        ctx.strokeRect(offsetX, offsetY, plateW * scale, plateH * scale);
-        ctx.setLineDash([]); // 원상복구
-
-        // 원판 상단 정보 태그 라벨링
-        ctx.fillStyle = '#64748b';
-        ctx.font = '11px Arial';
-        ctx.fillText(`원판 아웃라인 영역 (${plateW} × ${plateH})`, offsetX, offsetY - 10);
-
-        // ──────────────────────────────────────────
-        // 라인 내부에 실제 안착된 사이즈 재단면 그리기
-        // ──────────────────────────────────────────
-        placedItems.forEach((item, index) => {
-            const rx = offsetX + item.x * scale;
-            const ry = offsetY + item.y * scale;
-            const rw = item.w * scale;
-            const rh = item.h * scale;
-
-            // 재단면 컬러링 (오렌지 마블 테마)
-            ctx.fillStyle = '#e67e22';
-            ctx.fillRect(rx, ry, rw, rh);
-
-            // 경계 화이트 실선 컷팅라인
-            ctx.strokeStyle = '#ffffff';
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(rx, ry, rw, rh);
-
-            // 가로세로 치수 텍스트 마킹
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 11px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-
-            // 치수 텍스트 포맷팅 (자동 정렬 회전 여부 심볼 포함)
-            let txt = `${item.w}×${item.h}`;
-            
-            if (rw > 40 && rh > 18) {
-                ctx.fillText(txt, rx + rw / 2, ry + rh / 2);
+            if (selectedSlab === "3600*1600") {
+                slabW = 3600; slabH = 1600;
+            } else if (selectedSlab === "2700*1200") {
+                slabW = 2700; slabH = 1200;
+            } else if (selectedSlab === "custom") {
+                slabW = parseInt(document.getElementById('custom_slab_w').value) || 0;
+                slabH = parseInt(document.getElementById('custom_slab_h').value) || 0;
             }
-        });
-    }
-
-    // 하단 상세 목록 내역 UI 동적 드롭다운 함수
-    function updateResultUI(placedItems, totalInputCount, plateW, plateH) {
-        document.getElementById('summaryText').innerHTML = `
-            🟢 원판 규격: <span style="color:#0052cc;">${plateW}×${plateH}</span> 
-            | 배치 완료: <strong>${placedItems.length}</strong>개 / 총 입력: ${totalInputCount}개
-        `;
-
-        const resultContainer = document.getElementById('resultItems');
-        resultContainer.innerHTML = '';
-
-        placedItems.forEach((item, idx) => {
-            const div = document.createElement('div');
-            div.className = 'result-item';
             
-            let rotationStatus = item.rotated ? "<span style='color:#e67e22;'>🔄 가로 정렬 회전됨</span>" : "<span style='color:#10b981;'>정방향</span>";
-            
-            div.innerHTML = `
-                <span><strong>[#${idx + 1} 조각]</strong> 최종 재단크기: ${item.w} × ${item.h} mm (입력값: ${item.originalW}×${item.originalH})</span>
-                <span>${rotationStatus}</span>
-            `;
-            resultContainer.appendChild(div);
-        });
-    }
-</script>
+            const layoutContainer = document.getElementById('slab_layouts_container');
+            layoutContainer.innerHTML = '';
 
+            let slabs = [];
+
+            if (dataCut.pieces.length > 0 && slabW > 0 && slabH > 0) {
+                let sortedPieces = [...dataCut.pieces].sort((a, b) => (b.w * b.h) - (a.w * a.h));
+
+                sortedPieces.forEach(piece => {
+                    let placed = false;
+
+                    for (let i = 0; i < slabs.length; i++) {
+                        if (tryPlaceMaxRects(slabs[i], piece)) {
+                            placed = true;
+                            break;
+                        }
+                    }
+
+                    if (!placed) {
+                        let newSlab = {
+                            width: slabW,
+                            height: slabH,
+                            spaces: [{ x: 0, y: 0, w: slabW, h: slabH }],
+                            placedPieces: []
+                        };
+                        if (tryPlaceMaxRects(newSlab, piece)) {
+                            slabs.push(newSlab);
+                        } else {
+                            newSlab.placedPieces.push({ 
+                                x: 0, y: 0, w: piece.w, h: piece.h, 
+                                origW: piece.origW, origH: piece.origH, isOver: true, label: piece.label, rotated: false, isGroup: piece.isGroup 
+                            });
+                            slabs.push(newSlab);
+                        }
+                    }
+                });
+
+                slabs.forEach((slab, index) => {
+                    const slabDiv = document.createElement('div');
+                    slabDiv.className = "bg-white p-3 rounded-xl border border-slate-300 shadow-sm space-y-1.5";
+                    
+                    const title = document.createElement('div');
+                    title.className = "text-xs font-bold text-slate-700 flex justify-between";
+                    title.innerHTML = `<span>💿 원판 단면 #${index + 1} (${slab.width} × ${slab.height})</span> <span class="text-blue-600 font-bold">조각 ${slab.placedPieces.length}개</span>`;
+                    slabDiv.appendChild(title);
+
+                    const viewWrapper = document.createElement('div');
+                    viewWrapper.className = "w-full bg-slate-200 rounded-lg relative overflow-hidden border border-slate-400";
+                    const aspectRatio = (slab.height / slab.width) * 100;
+                    viewWrapper.style.paddingBottom = `${aspectRatio}%`;
+
+                    slab.placedPieces.forEach(p => {
+                        const box = document.createElement('div');
+                        const leftPct = (p.x / slab.width) * 100;
+                        const topPct = (p.y / slab.height) * 100;
+                        const widthPct = (p.w / slab.width) * 100;
+                        const heightPct = (p.h / slab.height) * 100;
+
+                        let bgClass = p.isGroup ? 'bg-amber-600 text-white' : 'bg-blue-600/90 text-white';
+                        if (p.isOver) bgClass = 'bg-red-500 text-white';
+
+                        box.className = `absolute border border-white flex flex-col justify-center items-center text-center p-1 ${bgClass}`;
+                        box.style.left = `${leftPct}%`;
+                        box.style.bottom = `${topPct}%`; 
+                        box.style.width = `${widthPct}%`;
+                        box.style.height = `${heightPct}%`;
+                        
+                        let rotBadge = p.rotated ? '<span class="text-[8px] bg-black/30 px-1 rounded mt-0.5">🔄 회전됨</span>' : '';
+                        box.innerHTML = `
+                            <span class="font-bold tracking-tighter text-[9px] leading-tight break-all px-0.5">${p.label}</span>
+                            ${rotBadge}
+                        `;
+                        viewWrapper.appendChild(box);
+                    });
+
+                    slabDiv.appendChild(viewWrapper);
+                    layoutContainer.appendChild(slabDiv);
+                });
+            } else {
+                layoutContainer.innerHTML = '<p class="text-xs text-gray-400 text-center py-4">치수를 입력하면 여기에 원판 도면 그림이 생성됩니다.</p>';
+            }
+
+            document.getElementById('total_slabs').textContent = slabs.length;
+
+            for(let key in activeFields) {
+                if(processMaster[key].type === 'text') {
+                    const val = document.getElementById(`proc_${key}`).value;
+                    const mVal = parseAndSumToMeters(val);
+                    const span = document.getElementById(`span_calc_${key}`);
+                    if(span) span.textContent = mVal;
+                }
+            }
+        }
+
+        function tryPlaceMaxRects(slab, piece) {
+            let spaces = slab.spaces;
+            
+            for (let i = 0; i < spaces.length; i++) {
+                let space = spaces[i];
+                if (piece.w <= space.w && piece.h <= space.h) {
+                    spaces.splice(i, 1);
+                    slab.placedPieces.push({
+                        x: space.x, y: space.y, w: piece.w, h: piece.h,
+                        origW: piece.origW, origH: piece.origH, label: piece.label, isGroup: piece.isGroup, rotated: false
+                    });
+                    splitRemainingSpace(spaces, space, piece.w, piece.h);
+                    return true;
+                }
+            }
+
+            if (piece.canRotate) {
+                for (let i = 0; i < spaces.length; i++) {
+                    let space = spaces[i];
+                    if (piece.h <= space.w && piece.w <= space.h) {
+                        spaces.splice(i, 1);
+                        slab.placedPieces.push({
+                            x: space.x, y: space.y, w: piece.h, h: piece.w,
+                            origW: piece.origW, origH: piece.origH, label: piece.label, isGroup: piece.isGroup, rotated: true
+                        });
+                        splitRemainingSpace(spaces, space, piece.h, piece.w);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function splitRemainingSpace(spaces, space, placedW, placedH) {
+            let remainW = space.w - placedW;
+            let remainH = space.h - placedH;
+
+            if (remainW > 0) {
+                spaces.push({ x: space.x + placedW, y: space.y, w: remainW, h: space.h });
+            }
+            if (remainH > 0) {
+                spaces.push({ x: space.x, y: space.y + placedH, w: placedW, h: remainH });
+            }
+            spaces.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+        }
+
+        function saveItemToLeft() {
+            const thickness = document.getElementById('item_thickness').value;
+            const rawName = document.getElementById('item_name').value.trim() || "미지정 자재";
+            const itemName = `[${thickness}] ${rawName}`;
+            
+            const slabs = parseInt(document.getElementById('total_slabs').textContent) || 0;
+            const cutLen = parseFloat(document.getElementById('res_cut').textContent) || 0;
+            
+            const selectedSlab = document.getElementById('slab_size').value;
+            let slabDisplaySize = selectedSlab;
+            if (selectedSlab === 'custom') {
+                const cw = document.getElementById('custom_slab_w').value || '0';
+                const ch = document.getElementById('custom_slab_h').value || '0';
+                slabDisplaySize = `잔재 (${cw}*${ch})`;
+            }
+
+            const dataCut = parseCutPieces(document.getElementById('input_cut').value);
+            const cutDetails = dataCut.details;
+
+            let activeProcsData = [];
+            for(let key in activeFields) {
+                const meta = processMaster[key];
+                const inputEl = document.getElementById(`proc_${key}`);
+                if(inputEl) {
+                    if(meta.type === 'text') {
+                        const mLen = parseFloat(parseAndSumToMeters(inputEl.value)) || 0;
+                        if(mLen > 0) activeProcsData.push({ name: meta.name, val: mLen + ' m' });
+                    } else {
+                        const count = parseInt(inputEl.value) || 0;
+                        if(count > 0) activeProcsData.push({ name: meta.name, val: count + ' 개' });
+                    }
+                }
+            }
+
+            if(slabs === 0 && cutLen === 0 && activeProcsData.length === 0) {
+                alert("입력된 내용이 없습니다.");
+                return;
+            }
+
+            globalSavedItems.push({
+                id: Date.now(),
+                name: itemName,
+                slabSize: slabDisplaySize,
+                slabs: slabs,
+                cutLen: cutLen,
+                cutDetails: cutDetails,
+                procs: activeProcsData
+            });
+
+            updateLeftListUI();
+            resetCurrentForm();
+        }
+
+        function updateLeftListUI() {
+            const listEl = document.getElementById('saved_list');
+            const emptyEl = document.getElementById('empty_msg');
+
+            if (globalSavedItems.length === 0) {
+                if(emptyEl) emptyEl.style.display = 'block';
+                listEl.innerHTML = '';
+                if(emptyEl) listEl.appendChild(emptyEl);
+                document.getElementById('grand_slabs').textContent = 0;
+                document.getElementById('grand_length').textContent = 0;
+                return;
+            }
+
+            if(emptyEl) emptyEl.style.display = 'none';
+            listEl.innerHTML = '';
+
+            let totalSlabs = 0, totalCut = 0;
+
+            globalSavedItems.forEach(item => {
+                totalSlabs += item.slabs;
+                totalCut += item.cutLen;
+
+                let procLines = item.procs.map(p => `<div>• ${p.name}: <span class="font-bold text-slate-700">${p.val}</span></div>`).join('');
+                let detailsLine = item.cutDetails.length > 0 
+                    ? `<div class="col-span-2 text-[11px] bg-slate-100 p-1.5 rounded mt-1 text-blue-800 break-words font-sans">📐 입력 치수: ${item.cutDetails.join(', ')}</div>` 
+                    : '';
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 p-3 rounded-xl border border-gray-200 text-xs space-y-1 relative shadow-sm";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start font-bold text-sm text-slate-800">
+                        <div class="flex flex-col">
+                            <span>📌 ${item.name}</span>
+                            <span class="text-[10px] text-gray-400 font-normal">사용 자재: ${item.slabSize}</span>
+                        </div>
+                        <button onclick="deleteItem(${item.id})" class="text-red-500 font-normal text-xs hover:underline pt-0.5">삭제</button>
+                    </div>
+                    <div class="text-gray-600 grid grid-cols-2 gap-x-2 gap-y-0.5 font-mono pt-1">
+                        <div>• 소요수량: <span class="text-blue-600 font-bold">${item.slabs}</span> 장</div>
+                        <div>• 재단길이(4면): <span class="text-slate-700 font-bold">${item.cutLen}</span> m</div>
+                        ${procLines}
+                        ${detailsLine}
+                    </div>
+                `;
+                listEl.appendChild(card);
+            });
+
+            document.getElementById('grand_slabs').textContent = totalSlabs;
+            document.getElementById('grand_length').textContent = totalCut.toFixed(2);
+        }
+
+        function deleteItem(id) {
+            globalSavedItems = globalSavedItems.filter(item => item.id !== id);
+            updateLeftListUI();
+        }
+
+        function clearAllRecords() {
+            if(globalSavedItems.length === 0) {
+                alert("초기화할 기록이 없습니다.");
+                return;
+            }
+            if (confirm("⚠️ 정말로 모든 누적 기록을 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.")) {
+                globalSavedItems = [];
+                updateLeftListUI();
+                alert("모든 기록이 초기화되었습니다.");
+            }
+        }
+
+        function resetCurrentForm() {
+            document.getElementById('item_thickness').value = '12T';
+            document.getElementById('item_name').value = '';
+            document.getElementById('input_cut').value = '';
+            document.getElementById('slab_size').value = '3200*1600';
+            document.getElementById('custom_slab_w').value = '';
+            document.getElementById('custom_slab_h').value = '';
+            document.getElementById('custom_slab_inputs').classList.add('hidden');
+            activeFields = {};
+            renderFields();
+            calculateAll();
+        }
+
+        calculateAll();
+    </script>
 </body>
 </html>
