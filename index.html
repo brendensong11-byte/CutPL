@@ -55,7 +55,7 @@
         <div class="lg:col-span-7 bg-white p-6 rounded-2xl shadow-xl border border-gray-100 space-y-5">
             <div class="border-b border-gray-100 pb-3 text-center">
                 <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">
-                    도면 계산기<span class="text-blue-600 font-bold text-base"> (✨ 반장님 맞춤 N단 무한 연장재단 및 자유회전 버전)</span>
+                    도면 계산기<span class="text-blue-600 font-bold text-base"> (🧩 완벽 테트리스 빈틈 밀착배치 버전)</span>
                 </h1>
             </div>
 
@@ -101,7 +101,7 @@
             <div class="bg-blue-50/70 p-4 rounded-xl border border-blue-100 flex justify-between items-center text-sm">
                 <div class="flex flex-col">
                     <span class="font-bold text-gray-700">🔮 예측 필요 원판(잔재) 수량:</span>
-                    <span class="text-[11px] text-blue-600 font-medium mt-0.5">✨ 하이픈(-) 무한 연속 묶음 유지 및 일반 조각 빈틈 자동회전 시스템 적용</span>
+                    <span class="text-[11px] text-blue-600 font-medium mt-0.5">✨ 가로든 세로든 빈틈만 있으면 끝까지 추적해서 구겨 넣는 테트리스 빌더 가동 중</span>
                 </div>
                 <span class="text-base font-black text-blue-700"><span id="total_slabs">0</span> 장</span>
             </div>
@@ -110,7 +110,7 @@
                 <label class="block text-sm font-bold text-gray-700 mb-1">재단 치수 입력 (가로 세로 순서대로)</label>
                 <textarea id="input_cut" class="w-full p-3 border border-gray-200 rounded-xl font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50/50" rows="8" placeholder="치수를 입력하세요! (예: 2450 915)&#10;1980 943&#10;2081 650&#10;400 600 - 400 1300 - 400 600 - 400 600&#10;1750 700" oninput="calculateAll()"></textarea>
                 <div class="flex justify-between items-center mt-1">
-                    <span class="text-[11px] text-amber-600 font-medium">💡 일반 조각은 빈틈에 맞춰 자동 회전하며, 하이픈(-)으로 여러 개 연결된 조각은 일렬 연장재단 조각으로 묶입니다.</span>
+                    <span class="text-[11px] text-amber-600 font-medium">💡 하이픈(-) 연속 조각은 일렬 연장재단 상태를 고수하며 원판 내 가용 공간에 테트리스 배치됩니다.</span>
                     <div class="text-xs text-gray-500">현재 품목 재단 총 길이 (4면 완재단 기준): <span id="res_cut" class="font-bold text-blue-600">0</span> m</div>
                 </div>
             </div>
@@ -181,7 +181,6 @@
             return (sumMm / 1000).toFixed(2);
         }
 
-        // 🛠️ 반장님 수정 요청 반영: 하이픈(-) 무한 연속 연결(N단 결합) 파싱 로직
         function parseCutPieces(text) {
             let pieces = [];
             let totalLengthM = 0;
@@ -195,7 +194,6 @@
                 if(!trimmed) return;
                 
                 if (trimmed.includes('-')) {
-                    // 하이픈으로 쪼개진 모든 파트 배열화
                     const rawParts = trimmed.split('-');
                     let validSubPieces = [];
 
@@ -207,46 +205,31 @@
                     });
 
                     if (validSubPieces.length > 0) {
-                        // 1. 모든 서브 조각들이 가로 방향으로 일치하는지 검사 (폭이 같은 경우)
                         const allSameW = validSubPieces.every(p => p.w === validSubPieces[0].w);
-                        // 2. 모든 서브 조각들이 세로 방향으로 일치하는지 검사 (높이가 같은 경우)
                         const allSameH = validSubPieces.every(p => p.h === validSubPieces[0].h);
 
                         if (allSameW && validSubPieces.length > 1) {
-                            // 가로가 같으면 세로(높이)를 누적 합산하여 하나의 긴 조각으로 결합
                             const finalW = validSubPieces[0].w;
                             const finalH = validSubPieces.reduce((sum, p) => sum + p.h, 0);
                             const labelStr = validSubPieces.map(p => `${p.w}×${p.h}`).join('🔗');
-                            
-                            pieces.push({
-                                w: finalW, h: finalH, origW: finalW, origH: finalH,
-                                canRotate: false, isGroup: true, label: labelStr
-                            });
+                            pieces.push({ w: finalW, h: finalH, origW: finalW, origH: finalH, canRotate: true, isGroup: true, label: labelStr });
                         } else if (allSameH && validSubPieces.length > 1) {
-                            // 세로가 같으면 가로(길이)를 누적 합산하여 하나의 긴 조각으로 결합
                             const finalW = validSubPieces.reduce((sum, p) => sum + p.w, 0);
                             const finalH = validSubPieces[0].h;
                             const labelStr = validSubPieces.map(p => `${p.w}×${p.h}`).join('🔗');
-                            
-                            pieces.push({
-                                w: finalW, h: finalH, origW: finalW, origH: finalH,
-                                canRotate: false, isGroup: true, label: labelStr
-                            });
+                            pieces.push({ w: finalW, h: finalH, origW: finalW, origH: finalH, canRotate: true, isGroup: true, label: labelStr });
                         } else {
-                            // 방향 정렬이 일치하지 않는 예외적인 경우 개별 조각으로 해체 안전 처리
                             validSubPieces.forEach(p => {
                                 pieces.push({ w: p.w, h: p.h, origW: p.w, origH: p.h, canRotate: true, label: `${p.w}×${p.h}` });
                             });
                         }
 
-                        // 전체 4면 완재단 길이 환산 누적
                         validSubPieces.forEach(p => {
                             totalLengthM += ((p.w + p.h) * 2) / 1000;
                         });
                         cutDetails.push(validSubPieces.map(p => `${p.w}×${p.h}`).join('-'));
                     }
                 } else {
-                    // 일반 단독 조각 처리
                     const parts = trimmed.match(/\d+/g);
                     if (parts && parts.length >= 2) {
                         const w = parseInt(parts[0]);
@@ -318,6 +301,7 @@
             }
         }
 
+        // 🛠️ 원천 해결: 테트리스형 빈틈 완전 추적 맥스렉츠 알고리즘 개조
         function calculateAll() {
             const dataCut = parseCutPieces(document.getElementById('input_cut').value);
             document.getElementById('res_cut').textContent = dataCut.length;
@@ -340,13 +324,14 @@
             let slabs = [];
 
             if (dataCut.pieces.length > 0 && slabW > 0 && slabH > 0) {
+                // 큰 조각 우선 정렬
                 let sortedPieces = [...dataCut.pieces].sort((a, b) => (b.w * b.h) - (a.w * a.h));
 
                 sortedPieces.forEach(piece => {
                     let placed = false;
 
                     for (let i = 0; i < slabs.length; i++) {
-                        if (tryPlaceMaxRects(slabs[i], piece)) {
+                        if (tryTetrisPlacement(slabs[i], piece)) {
                             placed = true;
                             break;
                         }
@@ -359,9 +344,10 @@
                             spaces: [{ x: 0, y: 0, w: slabW, h: slabH }],
                             placedPieces: []
                         };
-                        if (tryPlaceMaxRects(newSlab, piece)) {
+                        if (tryTetrisPlacement(newSlab, piece)) {
                             slabs.push(newSlab);
                         } else {
+                            // 절대 안 들어가는 예외 치수 오버플로우 처리
                             newSlab.placedPieces.push({ 
                                 x: 0, y: 0, w: piece.w, h: piece.h, 
                                 origW: piece.origW, origH: piece.origH, isOver: true, label: piece.label, rotated: false, isGroup: piece.isGroup 
@@ -428,50 +414,101 @@
             }
         }
 
-        function tryPlaceMaxRects(slab, piece) {
-            let spaces = slab.spaces;
-            
-            for (let i = 0; i < spaces.length; i++) {
-                let space = spaces[i];
+        // 테트리스처럼 빈 공간 전수조사 및 모든 여유 구역 분할 매칭
+        function tryTetrisPlacement(slab, piece) {
+            let bestSpaceIndex = -1;
+            let bestRotated = false;
+            let minScore = Infinity; 
+
+            // 1단계: 돌리지 않거나 돌려서 들어갈 수 있는 최적의 구석 빈틈 자리를 전수조사
+            for (let i = 0; i < slab.spaces.length; i++) {
+                let space = slab.spaces[i];
+                
+                // 안 돌리고 들어가는 경우
                 if (piece.w <= space.w && piece.h <= space.h) {
-                    spaces.splice(i, 1);
-                    slab.placedPieces.push({
-                        x: space.x, y: space.y, w: piece.w, h: piece.h,
-                        origW: piece.origW, origH: piece.origH, label: piece.label, isGroup: piece.isGroup, rotated: false
-                    });
-                    splitRemainingSpace(spaces, space, piece.w, piece.h);
-                    return true;
+                    let score = Math.min(space.w - piece.w, space.h - piece.h);
+                    if (score < minScore) {
+                        minScore = score;
+                        bestSpaceIndex = i;
+                        bestRotated = false;
+                    }
+                }
+                // 90도 돌려보는 경우 (돌릴 수 있을 때)
+                if (piece.canRotate && piece.h <= space.w && piece.w <= space.h) {
+                    let score = Math.min(space.w - piece.h, space.h - piece.w);
+                    if (score < minScore) {
+                        minScore = score;
+                        bestSpaceIndex = i;
+                        bestRotated = true;
+                    }
                 }
             }
 
-            if (piece.canRotate) {
-                for (let i = 0; i < spaces.length; i++) {
-                    let space = spaces[i];
-                    if (piece.h <= space.w && piece.w <= space.h) {
-                        spaces.splice(i, 1);
-                        slab.placedPieces.push({
-                            x: space.x, y: space.y, w: piece.h, h: piece.w,
-                            origW: piece.origW, origH: piece.origH, label: piece.label, isGroup: piece.isGroup, rotated: true
-                        });
-                        splitRemainingSpace(spaces, space, piece.h, piece.w);
-                        return true;
-                    }
+            // 자리를 찾았다면 안착 후 공간 정보 칼 업데이트
+            if (bestSpaceIndex !== -1) {
+                let space = slab.spaces[bestSpaceIndex];
+                slab.spaces.splice(bestSpaceIndex, 1);
+
+                let finalW = bestRotated ? piece.h : piece.w;
+                let finalH = bestRotated ? piece.w : piece.h;
+
+                slab.placedPieces.push({
+                    x: space.x, y: space.y, w: finalW, h: finalH,
+                    origW: piece.origW, origH: piece.origH, label: piece.label, isGroup: piece.isGroup, rotated: bestRotated
+                });
+
+                // 남은 빈 공간 리스트 확장식 분할법(MaxRects 구조) 적용
+                let newSpaces = [];
+                // 우측 남는 공간 계산
+                if (space.w - finalW > 0) {
+                    newSpaces.push({ x: space.x + finalW, y: space.y, w: space.w - finalW, h: space.h });
                 }
+                // 상단 남는 공간 계산
+                if (space.h - finalH > 0) {
+                    newSpaces.push({ x: space.x, y: space.y + finalH, w: space.w, h: space.h - finalH });
+                }
+
+                // 기존 공간들과 결합 및 중복·중첩 구역 전수 필터링
+                slab.spaces.push(...newSpaces);
+                cleanAndPruneSpaces(slab, finalW, finalH, space.x, space.y);
+                return true;
             }
             return false;
         }
 
-        function splitRemainingSpace(spaces, space, placedW, placedH) {
-            let remainW = space.w - placedW;
-            let remainH = space.h - placedH;
+        // 배치된 조각 때문에 잘리거나 겹친 다른 빈 공간 사각형들의 좌표 체계를 완전 갱신
+        function cleanAndPruneSpaces(slab, pw, ph, px, py) {
+            let clean = [];
+            for (let i = 0; i < slab.spaces.length; i++) {
+                let s = slab.spaces[i];
+                
+                // 겹치는지 체크
+                if (px >= s.x + s.w || px + pw <= s.x || py >= s.y + s.h || py + ph <= s.y) {
+                    clean.push(s); // 안 겹치면 통과
+                } else {
+                    // 겹치면 사방으로 조각내서 생존 가능한 빈 사각형을 재합산
+                    if (px > s.x) clean.push({ x: s.x, y: s.y, w: px - s.x, h: s.h });
+                    if (px + pw < s.x + s.w) clean.push({ x: px + pw, y: s.y, w: (s.x + s.w) - (px + pw), h: s.h });
+                    if (py > s.y) clean.push({ x: s.x, y: s.y, w: s.w, h: py - s.y });
+                    if (py + ph < s.y + s.h) clean.push({ x: s.x, y: py + ph, w: s.w, h: (s.y + s.h) - (py + ph) });
+                }
+            }
 
-            if (remainW > 0) {
-                spaces.push({ x: space.x + placedW, y: space.y, w: remainW, h: space.h });
+            // 다른 사각형에 완전히 포함되는 쓸모없는 내부 사각형 제거
+            for (let i = 0; i < clean.length; i++) {
+                for (let j = 0; j < clean.length; j++) {
+                    if (i !== j && clean[j].x <= clean[i].x && clean[j].y <= clean[i].y &&
+                        clean[j].x + clean[j].w >= clean[i].x + clean[i].w &&
+                        clean[j].y + clean[j].h >= clean[i].y + clean[i].h) {
+                        clean.splice(i, 1);
+                        i--;
+                        break;
+                    }
+                }
             }
-            if (remainH > 0) {
-                spaces.push({ x: space.x, y: space.y + placedH, w: placedW, h: remainH });
-            }
-            spaces.sort((a, b) => (b.w * b.h) - (a.w * a.h));
+
+            // 작은 남은 쪼가리 면적순 정렬 정돈
+            slab.spaces = clean.sort((a, b) => (b.w * b.h) - (a.w * a.h));
         }
 
         function saveItemToLeft() {
